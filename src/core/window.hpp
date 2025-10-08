@@ -8,18 +8,15 @@ const uint32_t H = 900;
 class GatWindow {
 
 public:
+	GatWindow();
+	~GatWindow();
+
 	void initWindow();
+	bool shouldClose();
+	void pollEvents();
+
 	
 private:
 	GLFWwindow* window;
-
-	void initWindow() {
-		glfwInit();
-
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-		window = glfwCreateWindow(W, H, "Gathas", nullptr, nullptr);
-	}
 
 };
