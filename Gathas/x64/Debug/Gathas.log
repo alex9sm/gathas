@@ -1,2 +1,5 @@
-﻿  window.cpp
+﻿  application.cpp
+  window.cpp
+  main.cpp
+  Generating Code...
   Gathas.vcxproj -> D:\codingfolder\Gathas\x64\Debug\Gathas.exe

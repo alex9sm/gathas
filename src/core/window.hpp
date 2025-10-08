@@ -15,6 +15,8 @@ public:
 	bool shouldClose();
 	void pollEvents();
 
+	GatWindow(const GatWindow&) = delete;
+	GatWindow& operator=(const GatWindow&) = delete;
 	
 private:
 	GLFWwindow* window;
