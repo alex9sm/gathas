@@ -1,1 +1,23 @@
+# Visual Studio cache and user-specific files
 .vs/
+*.user
+*.suo
+*.vcxproj.user
+
+# Build output
+Debug/
+Release/
+x64/
+x86/
+bin/
+obj/
+
+# Other temp files
+*.log
+*.tlog
+*.ipch
+*.db
+*.opendb
+*.VC.db
+*.pdb
+*.ilk
