@@ -1,6 +1,9 @@
 #pragma once
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW\glfw3.h>
 #include "window.hpp"
+#include <Vulkan/vulkan.h>
 
 class Application {
 public:
@@ -11,6 +14,11 @@ public:
 
 private:
     GatWindow window;
+    VkInstance instance;
 
     void mainLoop();
+    void initVulkan();
+    void createInstance();
+    void pickPhysicalDevice();
+    void cleanup();
 };
