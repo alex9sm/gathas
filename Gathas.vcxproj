@@ -138,10 +138,12 @@
     <ClCompile Include="src\core\application.cpp" />
     <ClCompile Include="src\core\window.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\renderer\swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\application.hpp" />
     <ClInclude Include="src\core\window.hpp" />
+    <ClInclude Include="src\renderer\swapchain.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
