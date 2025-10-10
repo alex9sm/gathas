@@ -19,6 +19,5 @@ private:
     void mainLoop();
     void initVulkan();
     void createInstance();
-    void pickPhysicalDevice();
     void cleanup();
 };
