@@ -3,8 +3,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW\glfw3.h>
 #include "window.hpp"
+#include "../renderer/swapchain.hpp"
 #include <Vulkan/vulkan.h>
 #include <optional>
+#include <memory>
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -31,12 +33,15 @@ private:
     VkQueue presentQueue;
     VkSurfaceKHR surface;
 
+    std::unique_ptr<SwapChain> swapChain;
+
     void mainLoop();
     void initVulkan();
     void createInstance();
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createSwapChain();
     void cleanup();
 
     bool isDeviceSuitable(VkPhysicalDevice device);

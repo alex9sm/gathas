@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include "../renderer/swapchain.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -29,6 +30,7 @@ void Application::initVulkan() {
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createSwapChain();
 }
 
 void Application::createInstance() {
@@ -86,7 +88,7 @@ void Application::pickPhysicalDevice() {
 
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    std::cout << "Selected GPU: " << deviceProperties.deviceName << std::endl;
+    std::cout << "selected GPU: " << deviceProperties.deviceName << std::endl;
 }
 
 bool Application::isDeviceSuitable(VkPhysicalDevice device) {
@@ -171,9 +173,16 @@ void Application::createLogicalDevice() {
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+
+    std::cout << "device created" << std::endl;
+}
+
+void Application::createSwapChain() {
+    swapChain = std::make_unique<SwapChain>(physicalDevice, device, surface, window.getWindow());
 }
 
 void Application::cleanup() {
+    swapChain.reset();
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
