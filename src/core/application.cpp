@@ -31,6 +31,7 @@ void Application::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
+    createPipeline();
 }
 
 void Application::createInstance() {
