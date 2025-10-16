@@ -31,6 +31,7 @@ void Application::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
+    createRenderPass();
     createPipeline();
 }
 
@@ -182,7 +183,12 @@ void Application::createSwapChain() {
     swapChain = std::make_unique<SwapChain>(physicalDevice, device, surface, window.getWindow());
 }
 
+void Application::createPipeline() {
+    pipeline = std::make_unique<Pipeline>(device, swapChain->getExtent(), swapChain->getImageFormat());
+}
+
 void Application::cleanup() {
+    pipeline.reset();
     swapChain.reset();
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);

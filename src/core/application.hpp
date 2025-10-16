@@ -4,6 +4,7 @@
 #include <GLFW\glfw3.h>
 #include "window.hpp"
 #include "../renderer/swapchain.hpp"
+#include "../renderer/pipeline.hpp"
 #include <Vulkan/vulkan.h>
 #include <optional>
 #include <memory>
@@ -34,6 +35,7 @@ private:
     VkSurfaceKHR surface;
 
     std::unique_ptr<SwapChain> swapChain;
+    std::unique_ptr<Pipeline> pipeline;
 
     void mainLoop();
     void initVulkan();
@@ -42,6 +44,8 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createSwapChain();
+    void createRenderPass();
+    void createPipeline();
     void cleanup();
 
     bool isDeviceSuitable(VkPhysicalDevice device);

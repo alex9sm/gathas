@@ -52,5 +52,7 @@
     <None Include="shaders\shadercompile.bat">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="shaders\vert.spv" />
+    <None Include="shaders\frag.spv" />
   </ItemGroup>
 </Project>
