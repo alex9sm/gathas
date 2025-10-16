@@ -1,5 +1,6 @@
 #include "application.hpp"
 #include "../renderer/swapchain.hpp"
+#include "../renderer/pipeline.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -31,7 +32,6 @@ void Application::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
-    createRenderPass();
     createPipeline();
 }
 
@@ -185,6 +185,7 @@ void Application::createSwapChain() {
 
 void Application::createPipeline() {
     pipeline = std::make_unique<Pipeline>(device, swapChain->getExtent(), swapChain->getImageFormat());
+    swapChain->createFramebuffers(pipeline->getRenderPass());
 }
 
 void Application::cleanup() {

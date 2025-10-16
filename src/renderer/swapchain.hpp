@@ -25,6 +25,10 @@ public:
 	const std::vector<VkImageView>& getImageViews() const { return swapChainImageViews; }
 	size_t getImageCount() const { return swapChainImages.size(); }
 
+	//frambuffer
+	void createFramebuffers(VkRenderPass renderPass);
+	const std::vector<VkFramebuffer>& getFramebuffers() const { return swapChainFramebuffers; }
+
 private:
 
 	//vulkan handles
@@ -43,5 +47,8 @@ private:
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window);
+
+	//framebuffer helper
+	std::vector<VkFramebuffer> swapChainFramebuffers;
 
 };

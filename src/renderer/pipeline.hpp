@@ -15,7 +15,8 @@ public:
 
 	VkPipeline getPipeline() const { return graphicsPipeline; }
 	VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
-
+	VkRenderPass getRenderPass() const { return renderPass; }
+ 
 private:
 	VkDevice device;
 	VkPipeline graphicsPipeline;

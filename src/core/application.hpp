@@ -44,7 +44,6 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createSwapChain();
-    void createRenderPass();
     void createPipeline();
     void cleanup();
 
