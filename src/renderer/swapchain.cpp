@@ -60,7 +60,7 @@ void SwapChain::createSwapChain(VkPhysicalDevice physicalDevice, VkSurfaceKHR su
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create swap chain!");
+		throw std::runtime_error("failed to create swap chain");
 	}
 	
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
@@ -96,7 +96,7 @@ void SwapChain::createImageViews() {
         createInfo.subresourceRange.layerCount = 1;
 
         if (vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create image views!");
+            throw std::runtime_error("failed to create image views");
         }
     }
 }
@@ -186,7 +186,7 @@ void SwapChain::createFramebuffers(VkRenderPass renderPass) {
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
+            throw std::runtime_error("failed to create framebuffer");
         }
     }
 

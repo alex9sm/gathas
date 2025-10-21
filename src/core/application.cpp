@@ -22,8 +22,9 @@ void Application::run() {
 void Application::mainLoop() {
     while (!window.shouldClose()) {
         window.pollEvents();
-
+        drawFrame();
     }
+    vkDeviceWaitIdle(device);
 }
 
 void Application::initVulkan() {
@@ -33,6 +34,7 @@ void Application::initVulkan() {
     createLogicalDevice();
     createSwapChain();
     createPipeline();
+    createCommandBuffer();
 }
 
 void Application::createInstance() {
@@ -58,7 +60,7 @@ void Application::createInstance() {
     createInfo.enabledLayerCount = 0;
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create instance!");
+        throw std::runtime_error("failed to create instance");
     }
 }
 
@@ -71,7 +73,7 @@ void Application::pickPhysicalDevice() {
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
     if (deviceCount == 0) {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        throw std::runtime_error("failed to find gpus with vulkan support");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -85,12 +87,12 @@ void Application::pickPhysicalDevice() {
     }
 
     if (physicalDevice == VK_NULL_HANDLE) {
-        throw std::runtime_error("failed to find a suitable GPU!");
+        throw std::runtime_error("failed to find a suitable gpu");
     }
 
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    std::cout << "selected GPU: " << deviceProperties.deviceName << std::endl;
+    std::cout << "selected gpu: " << deviceProperties.deviceName << std::endl;
 }
 
 bool Application::isDeviceSuitable(VkPhysicalDevice device) {
@@ -170,7 +172,7 @@ void Application::createLogicalDevice() {
     createInfo.enabledLayerCount = 0;
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create logical device!");
+        throw std::runtime_error("failed to create logical device");
     }
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
@@ -188,7 +190,67 @@ void Application::createPipeline() {
     swapChain->createFramebuffers(pipeline->getRenderPass());
 }
 
+void Application::createCommandBuffer() {
+    commandBuffer = std::make_unique<CommandBuffer>(device, physicalDevice, surface);
+}
+
+void Application::drawFrame() {
+    size_t maxFrames = commandBuffer->getMaxFramesInFlight();
+
+    vkWaitForFences(device, 1, &commandBuffer->getInFlightFence(currentFrame), VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &commandBuffer->getInFlightFence(currentFrame));
+
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(device, swapChain->getSwapChain(), UINT64_MAX,
+        commandBuffer->getImageAvailableSemaphore(currentFrame),
+        VK_NULL_HANDLE, &imageIndex);
+
+    VkCommandBuffer cmdBuffer = commandBuffer->getCommandBuffer(currentFrame);
+    vkResetCommandBuffer(cmdBuffer, 0);
+
+    commandBuffer->recordCommandBuffer(cmdBuffer, imageIndex,
+        pipeline->getRenderPass(),
+        swapChain->getFramebuffers(),
+        swapChain->getExtent(),
+        pipeline->getPipeline());
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore waitSemaphores[] = { commandBuffer->getImageAvailableSemaphore(currentFrame) };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmdBuffer;
+
+    VkSemaphore signalSemaphores[] = { commandBuffer->getRenderFinishedSemaphore(currentFrame) };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, commandBuffer->getInFlightFence(currentFrame)) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = { swapChain->getSwapChain() };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr;
+
+    vkQueuePresentKHR(presentQueue, &presentInfo);
+
+    currentFrame = (currentFrame + 1) % maxFrames;
+}
+
 void Application::cleanup() {
+    commandBuffer.reset();
     pipeline.reset();
     swapChain.reset();
     vkDestroyDevice(device, nullptr);

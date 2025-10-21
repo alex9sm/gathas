@@ -5,6 +5,7 @@
 #include "window.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
+#include "../renderer/commandbuffer.hpp"
 #include <Vulkan/vulkan.h>
 #include <optional>
 #include <memory>
@@ -36,6 +37,8 @@ private:
 
     std::unique_ptr<SwapChain> swapChain;
     std::unique_ptr<Pipeline> pipeline;
+    std::unique_ptr<CommandBuffer> commandBuffer;
+    uint32_t currentFrame = 0;
 
     void mainLoop();
     void initVulkan();
@@ -45,6 +48,8 @@ private:
     void createLogicalDevice();
     void createSwapChain();
     void createPipeline();
+    void createCommandBuffer();
+    void drawFrame();
     void cleanup();
 
     bool isDeviceSuitable(VkPhysicalDevice device);

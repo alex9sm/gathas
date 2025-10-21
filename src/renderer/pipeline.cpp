@@ -42,7 +42,7 @@ VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
 
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module!");
+        throw std::runtime_error("failed to create shader module");
     }
 
     return shaderModule;
@@ -86,7 +86,7 @@ void Pipeline::createRenderPass(VkFormat swapChainImageFormat) {
     renderPassInfo.pDependencies = &dependency;
 
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create render pass!");
+        throw std::runtime_error("failed to create render pass");
     }
 }
 
@@ -200,7 +200,7 @@ void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapC
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("failed to create pipeline layout");
     }
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -222,7 +222,7 @@ void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapC
     pipelineInfo.basePipelineIndex = -1;
 
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create graphics pipeline!");
+        throw std::runtime_error("failed to create graphics pipeline");
     }
 
     std::cout << "graphics pipeline created" << std::endl;
