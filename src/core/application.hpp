@@ -7,6 +7,7 @@
 #include "../renderer/pipeline.hpp"
 #include "../renderer/commandbuffer.hpp"
 #include <Vulkan/vulkan.h>
+#include "vk_mem_alloc.h"
 #include <optional>
 #include <memory>
 
@@ -34,6 +35,7 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkSurfaceKHR surface;
+    VmaAllocator allocator;
 
     std::unique_ptr<SwapChain> swapChain;
     std::unique_ptr<Pipeline> pipeline;

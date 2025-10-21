@@ -1,3 +1,4 @@
+#define VMA_IMPLEMENTATION
 #include "application.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
@@ -179,6 +180,12 @@ void Application::createLogicalDevice() {
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 
     std::cout << "device created" << std::endl;
+
+    VmaAllocatorCreateInfo allocatorInfo{};
+    allocatorInfo.physicalDevice = physicalDevice;
+    allocatorInfo.device = device;
+    allocatorInfo.instance = instance;
+    vmaCreateAllocator(&allocatorInfo, &allocator);
 }
 
 void Application::createSwapChain() {
@@ -253,6 +260,7 @@ void Application::cleanup() {
     commandBuffer.reset();
     pipeline.reset();
     swapChain.reset();
+    vmaDestroyAllocator(allocator);
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
