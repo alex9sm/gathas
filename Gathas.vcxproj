@@ -139,6 +139,7 @@
     <ClCompile Include="src\core\window.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\renderer\commandbuffer.cpp" />
+    <ClCompile Include="src\renderer\gpubuffer.cpp" />
     <ClCompile Include="src\renderer\pipeline.cpp" />
     <ClCompile Include="src\renderer\swapchain.cpp" />
   </ItemGroup>
@@ -147,8 +148,10 @@
     <ClInclude Include="src\core\application.hpp" />
     <ClInclude Include="src\core\window.hpp" />
     <ClInclude Include="src\renderer\commandbuffer.hpp" />
+    <ClInclude Include="src\renderer\gpubuffer.hpp" />
     <ClInclude Include="src\renderer\pipeline.hpp" />
     <ClInclude Include="src\renderer\swapchain.hpp" />
+    <ClInclude Include="src\renderer\vertex.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
