@@ -22,6 +22,7 @@ void Application::run() {
 
 void Application::mainLoop() {
     while (!window.shouldClose()) {
+
         window.pollEvents();
         drawFrame();
     }
@@ -87,7 +88,7 @@ void Application::pickPhysicalDevice() {
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (physicalDevice == nullptr) {
         throw std::runtime_error("failed to find a suitable gpu");
     }
 
@@ -198,7 +199,7 @@ void Application::createPipeline() {
 }
 
 void Application::createCommandBuffer() {
-    commandBuffer = std::make_unique<CommandBuffer>(device, physicalDevice, surface);
+    commandBuffer = std::make_unique<CommandBuffer>(device, physicalDevice, surface, graphicsQueue);
 }
 
 void Application::drawFrame() {
@@ -210,7 +211,7 @@ void Application::drawFrame() {
     uint32_t imageIndex;
     vkAcquireNextImageKHR(device, swapChain->getSwapChain(), UINT64_MAX,
         commandBuffer->getImageAvailableSemaphore(currentFrame),
-        VK_NULL_HANDLE, &imageIndex);
+        nullptr, &imageIndex);
 
     VkCommandBuffer cmdBuffer = commandBuffer->getCommandBuffer(currentFrame);
     vkResetCommandBuffer(cmdBuffer, 0);

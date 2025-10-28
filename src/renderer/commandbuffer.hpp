@@ -5,7 +5,7 @@
 
 class CommandBuffer {
 public:
-    CommandBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    CommandBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue graphicsQueue);
     ~CommandBuffer();
 
     CommandBuffer(const CommandBuffer&) = delete;
@@ -23,9 +23,14 @@ public:
 
     size_t getMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
 
+    //transfer command buffer utilities
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
 private:
     VkDevice device;
     VkCommandPool commandPool;
+    VkQueue graphicsQueue;
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;

@@ -4,7 +4,6 @@
 #include <array>
 #include <Vulkan/vulkan.h>
 #include "glm/glm.hpp"
-#include "glm/gtx/hash.hpp"
 
 struct Vertex {
 
