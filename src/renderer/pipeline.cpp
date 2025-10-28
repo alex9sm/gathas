@@ -4,8 +4,8 @@
 #include <stdexcept>
 
 Pipeline::Pipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat swapChainImageFormat)
-    : device(device), graphicsPipeline(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE), renderPass(VK_NULL_HANDLE),
-      vertShaderModule(VK_NULL_HANDLE), fragShaderModule(VK_NULL_HANDLE) {
+    : device(device), graphicsPipeline(nullptr), pipelineLayout(nullptr), renderPass(nullptr),
+      vertShaderModule(nullptr), fragShaderModule(nullptr) {
     createRenderPass(swapChainImageFormat);
     createGraphicsPipeline(swapChainExtent, swapChainImageFormat);
 }
@@ -218,10 +218,10 @@ void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapC
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.basePipelineHandle = nullptr;
     pipelineInfo.basePipelineIndex = -1;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(device, nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline");
     }
 
@@ -230,6 +230,6 @@ void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapC
     // cleanup
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
-    fragShaderModule = VK_NULL_HANDLE;
-    vertShaderModule = VK_NULL_HANDLE;
+    fragShaderModule = nullptr;
+    vertShaderModule = nullptr;
 }
