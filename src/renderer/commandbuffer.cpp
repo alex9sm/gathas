@@ -2,10 +2,10 @@
 #include <stdexcept>
 #include <iostream>
 
-CommandBuffer::CommandBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue graphicsQueue)
+CommandBuffer::CommandBuffer(VkDevice device, uint32_t graphicsQueueFamily, VkQueue graphicsQueue)
     : device(device), commandPool(VK_NULL_HANDLE), graphicsQueue(graphicsQueue) {
 
-    createCommandPool(physicalDevice, surface);
+    createCommandPool(graphicsQueueFamily);
     createCommandBuffers();
     createSyncObjects();
 
@@ -23,29 +23,11 @@ CommandBuffer::~CommandBuffer() {
     vkDestroyCommandPool(device, commandPool, nullptr);
 }
 
-uint32_t CommandBuffer::findQueueFamily(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-    for (uint32_t i = 0; i < queueFamilies.size(); i++) {
-        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find graphics queue family");
-}
-
-void CommandBuffer::createCommandPool(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
-    uint32_t queueFamilyIndex = findQueueFamily(physicalDevice, surface);
-
+void CommandBuffer::createCommandPool(uint32_t graphicsQueueFamily) {
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndex;
+    poolInfo.queueFamilyIndex = graphicsQueueFamily;
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");

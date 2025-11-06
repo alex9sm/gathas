@@ -200,7 +200,8 @@ void Application::createPipeline() {
 }
 
 void Application::createCommandBuffer() {
-    commandBuffer = std::make_unique<CommandBuffer>(device, physicalDevice, surface, graphicsQueue);
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    commandBuffer = std::make_unique<CommandBuffer>(device, indices.graphicsFamily.value(), graphicsQueue);
 }
 
 void Application::drawFrame() {

@@ -5,7 +5,7 @@
 
 class CommandBuffer {
 public:
-    CommandBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue graphicsQueue);
+    CommandBuffer(VkDevice device, uint32_t graphicsQueueFamily, VkQueue graphicsQueue);
     ~CommandBuffer();
 
     CommandBuffer(const CommandBuffer&) = delete;
@@ -39,9 +39,7 @@ private:
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
-    void createCommandPool(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    void createCommandPool(uint32_t graphicsQueueFamily);
     void createCommandBuffers();
     void createSyncObjects();
-
-    uint32_t findQueueFamily(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 };
