@@ -4,10 +4,14 @@
 #include <string>
 #include <vector>
 
+class ShaderManager;
+
 class Pipeline {
 
 public:
-	Pipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat swapChainImageFormat);
+	Pipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat swapChainImageFormat,
+		     ShaderManager* shaderManager, const std::string& vertShaderName,
+		     const std::string& fragShaderName);
 	~Pipeline();
 
 	Pipeline(const Pipeline&) = delete;
@@ -23,11 +27,8 @@ private:
 	VkPipelineLayout pipelineLayout;
 	VkRenderPass renderPass;
 
-	VkShaderModule vertShaderModule;
-	VkShaderModule fragShaderModule;
-
-	void createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapChainImageFormat);
+	void createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapChainImageFormat,
+		                        ShaderManager* shaderManager, const std::string& vertShaderName,
+		                        const std::string& fragShaderName);
 	void createRenderPass(VkFormat swapChainImageFormat);
-	VkShaderModule createShaderModule(const std::vector<char>& code);
-	std::vector<char> readFile(const std::string& filename);
 };

@@ -2,6 +2,7 @@
 #include "application.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
+#include "../renderer/shadermanager.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -36,6 +37,7 @@ void Application::initVulkan() {
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createShaderManager();
     createSwapChain();
     createPipeline();
     createCommandBuffer();
@@ -190,12 +192,17 @@ void Application::createLogicalDevice() {
     vmaCreateAllocator(&allocatorInfo, &allocator);
 }
 
+void Application::createShaderManager() {
+    shaderManager = std::make_unique<ShaderManager>(device);
+}
+
 void Application::createSwapChain() {
     swapChain = std::make_unique<SwapChain>(physicalDevice, device, surface, window.getWindow());
 }
 
 void Application::createPipeline() {
-    pipeline = std::make_unique<Pipeline>(device, swapChain->getExtent(), swapChain->getImageFormat());
+    pipeline = std::make_unique<Pipeline>(device, swapChain->getExtent(), swapChain->getImageFormat(),
+                                          shaderManager.get(), "vert.spv", "frag.spv");
     swapChain->createFramebuffers(pipeline->getRenderPass());
 }
 
@@ -277,6 +284,10 @@ void Application::cleanup() {
     commandBuffer.reset();
     pipeline.reset();
     swapChain.reset();
+    if (shaderManager) {
+        shaderManager->cleanup();
+    }
+    shaderManager.reset();
     vmaDestroyAllocator(allocator);
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -292,7 +303,6 @@ void Application::recreateSwapChain() {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window.getWindow(), &width, &height);
 
-    // Handle minimization - wait until window is restored
     while (width == 0 || height == 0) {
         glfwGetFramebufferSize(window.getWindow(), &width, &height);
         glfwWaitEvents();
@@ -300,11 +310,9 @@ void Application::recreateSwapChain() {
 
     vkDeviceWaitIdle(device);
 
-    // Cleanup old swap chain dependent resources
     swapChain.reset();
     pipeline.reset();
 
-    // Recreate swap chain and dependent resources
     createSwapChain();
     createPipeline();
 }

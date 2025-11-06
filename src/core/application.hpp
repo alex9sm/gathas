@@ -6,6 +6,7 @@
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
 #include "../renderer/commandbuffer.hpp"
+#include "../renderer/shadermanager.hpp"
 #include <Vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 #include <optional>
@@ -37,6 +38,7 @@ private:
     VkSurfaceKHR surface;
     VmaAllocator allocator;
 
+    std::unique_ptr<ShaderManager> shaderManager;
     std::unique_ptr<SwapChain> swapChain;
     std::unique_ptr<Pipeline> pipeline;
     std::unique_ptr<CommandBuffer> commandBuffer;
@@ -49,6 +51,7 @@ private:
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createShaderManager();
     void createSwapChain();
     void createPipeline();
     void createCommandBuffer();

@@ -136,20 +136,25 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\core\application.cpp" />
+    <ClCompile Include="src\renderer\mesh.cpp" />
     <ClCompile Include="src\core\window.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\renderer\commandbuffer.cpp" />
     <ClCompile Include="src\renderer\gpubuffer.cpp" />
     <ClCompile Include="src\renderer\pipeline.cpp" />
+    <ClCompile Include="src\renderer\shadermanager.cpp" />
     <ClCompile Include="src\renderer\swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dependencies\tiny_obj_loader.h" />
     <ClInclude Include="dependencies\vk_mem_alloc.h" />
     <ClInclude Include="src\core\application.hpp" />
+    <ClInclude Include="src\renderer\mesh.hpp" />
     <ClInclude Include="src\core\window.hpp" />
     <ClInclude Include="src\renderer\commandbuffer.hpp" />
     <ClInclude Include="src\renderer\gpubuffer.hpp" />
     <ClInclude Include="src\renderer\pipeline.hpp" />
+    <ClInclude Include="src\renderer\shadermanager.hpp" />
     <ClInclude Include="src\renderer\swapchain.hpp" />
     <ClInclude Include="src\renderer\vertex.hpp" />
   </ItemGroup>

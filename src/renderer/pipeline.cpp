@@ -1,51 +1,20 @@
 #include "pipeline.hpp"
+#include "shadermanager.hpp"
 #include <iostream>
-#include <fstream>
 #include <stdexcept>
 
-Pipeline::Pipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat swapChainImageFormat)
-    : device(device), graphicsPipeline(nullptr), pipelineLayout(nullptr), renderPass(nullptr),
-      vertShaderModule(nullptr), fragShaderModule(nullptr) {
+Pipeline::Pipeline(VkDevice device, VkExtent2D swapChainExtent, VkFormat swapChainImageFormat,
+                   ShaderManager* shaderManager, const std::string& vertShaderName,
+                   const std::string& fragShaderName)
+    : device(device), graphicsPipeline(nullptr), pipelineLayout(nullptr), renderPass(nullptr) {
     createRenderPass(swapChainImageFormat);
-    createGraphicsPipeline(swapChainExtent, swapChainImageFormat);
+    createGraphicsPipeline(swapChainExtent, swapChainImageFormat, shaderManager, vertShaderName, fragShaderName);
 }
 
 Pipeline::~Pipeline() {
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
-}
-
-std::vector<char> Pipeline::readFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file: " + filename);
-    }
-
-    size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-
-    return buffer;
-}
-
-VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-    VkShaderModule shaderModule;
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module");
-    }
-
-    return shaderModule;
 }
 
 void Pipeline::createRenderPass(VkFormat swapChainImageFormat) {
@@ -90,13 +59,12 @@ void Pipeline::createRenderPass(VkFormat swapChainImageFormat) {
     }
 }
 
-void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapChainImageFormat) {
+void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapChainImageFormat,
+                                      ShaderManager* shaderManager, const std::string& vertShaderName,
+                                      const std::string& fragShaderName) {
 
-    auto vertShaderCode = readFile("shaders/vert.spv");
-    auto fragShaderCode = readFile("shaders/frag.spv");
-
-    vertShaderModule = createShaderModule(vertShaderCode);
-    fragShaderModule = createShaderModule(fragShaderCode);
+    VkShaderModule vertShaderModule = shaderManager->getShaderModule(vertShaderName);
+    VkShaderModule fragShaderModule = shaderManager->getShaderModule(fragShaderName);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -226,10 +194,4 @@ void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapC
     }
 
     std::cout << "graphics pipeline created" << std::endl;
-
-    // cleanup
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
-    fragShaderModule = nullptr;
-    vertShaderModule = nullptr;
 }
