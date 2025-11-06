@@ -16,6 +16,9 @@ public:
 	bool shouldClose();
 	void pollEvents();
 	GLFWwindow* getWindow() { return window; }
+	void setFramebufferResizeCallback(GLFWframebuffersizefun callback) {
+		glfwSetFramebufferSizeCallback(window, callback);
+	}
 
 	GatWindow(const GatWindow&) = delete;
 	GatWindow& operator=(const GatWindow&) = delete;

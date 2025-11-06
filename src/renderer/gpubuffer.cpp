@@ -44,7 +44,7 @@ void GPUBuffer::create(VmaAllocator allocator, VkDeviceSize bufferSize,
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = size;
-        bufferInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Add transfer dst flag
+        bufferInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VmaAllocationCreateInfo allocInfo{};

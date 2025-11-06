@@ -86,7 +86,7 @@ void Pipeline::createRenderPass(VkFormat swapChainImageFormat) {
     renderPassInfo.pDependencies = &dependency;
 
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create render pass");
+        throw std::runtime_error("failed to create renderpass");
     }
 }
 

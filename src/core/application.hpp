@@ -41,6 +41,7 @@ private:
     std::unique_ptr<Pipeline> pipeline;
     std::unique_ptr<CommandBuffer> commandBuffer;
     uint32_t currentFrame = 0;
+    bool framebufferResized = false;
 
     void mainLoop();
     void initVulkan();
@@ -53,6 +54,9 @@ private:
     void createCommandBuffer();
     void drawFrame();
     void cleanup();
+    void recreateSwapChain();
+
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     bool isDeviceSuitable(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);

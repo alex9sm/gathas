@@ -9,6 +9,8 @@
 
 Application::Application() {
     window.initWindow();
+    window.setFramebufferResizeCallback(framebufferResizeCallback);
+    glfwSetWindowUserPointer(window.getWindow(), this);
 }
 
 Application::~Application() {
@@ -114,7 +116,6 @@ QueueFamilyIndices Application::findQueueFamilies(VkPhysicalDevice device) {
 
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
-        // Check for graphics support
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
         }
@@ -209,9 +210,16 @@ void Application::drawFrame() {
     vkResetFences(device, 1, &commandBuffer->getInFlightFence(currentFrame));
 
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(device, swapChain->getSwapChain(), UINT64_MAX,
+    VkResult result = vkAcquireNextImageKHR(device, swapChain->getSwapChain(), UINT64_MAX,
         commandBuffer->getImageAvailableSemaphore(currentFrame),
         nullptr, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapChain();
+        return;
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
 
     VkCommandBuffer cmdBuffer = commandBuffer->getCommandBuffer(currentFrame);
     vkResetCommandBuffer(cmdBuffer, 0);
@@ -252,7 +260,14 @@ void Application::drawFrame() {
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
-    vkQueuePresentKHR(presentQueue, &presentInfo);
+    result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+        framebufferResized = false;
+        recreateSwapChain();
+    } else if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
 
     currentFrame = (currentFrame + 1) % maxFrames;
 }
@@ -265,4 +280,30 @@ void Application::cleanup() {
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
+}
+
+void Application::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+    app->framebufferResized = true;
+}
+
+void Application::recreateSwapChain() {
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window.getWindow(), &width, &height);
+
+    // Handle minimization - wait until window is restored
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window.getWindow(), &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(device);
+
+    // Cleanup old swap chain dependent resources
+    swapChain.reset();
+    pipeline.reset();
+
+    // Recreate swap chain and dependent resources
+    createSwapChain();
+    createPipeline();
 }
