@@ -3,6 +3,7 @@
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
 #include "../renderer/shadermanager.hpp"
+#include "../renderer/mesh.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -41,6 +42,7 @@ void Application::initVulkan() {
     createSwapChain();
     createPipeline();
     createCommandBuffer();
+    createMesh();
 }
 
 void Application::createInstance() {
@@ -211,6 +213,11 @@ void Application::createCommandBuffer() {
     commandBuffer = std::make_unique<CommandBuffer>(device, indices.graphicsFamily.value(), graphicsQueue);
 }
 
+void Application::createMesh() {
+    mesh = std::make_unique<Mesh>();
+    mesh->createCube(allocator, commandBuffer.get());
+}
+
 void Application::drawFrame() {
     size_t maxFrames = commandBuffer->getMaxFramesInFlight();
 
@@ -236,7 +243,8 @@ void Application::drawFrame() {
         pipeline->getRenderPass(),
         swapChain->getFramebuffers(),
         swapChain->getExtent(),
-        pipeline->getPipeline());
+        pipeline->getPipeline(),
+        mesh.get());
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -281,6 +289,10 @@ void Application::drawFrame() {
 }
 
 void Application::cleanup() {
+    if (mesh) {
+        mesh->destroy(allocator);
+    }
+    mesh.reset();
     commandBuffer.reset();
     pipeline.reset();
     swapChain.reset();

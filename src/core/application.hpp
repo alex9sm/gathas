@@ -7,6 +7,7 @@
 #include "../renderer/pipeline.hpp"
 #include "../renderer/commandbuffer.hpp"
 #include "../renderer/shadermanager.hpp"
+#include "../renderer/mesh.hpp"
 #include <Vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 #include <optional>
@@ -42,6 +43,7 @@ private:
     std::unique_ptr<SwapChain> swapChain;
     std::unique_ptr<Pipeline> pipeline;
     std::unique_ptr<CommandBuffer> commandBuffer;
+    std::unique_ptr<Mesh> mesh;
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
 
@@ -55,6 +57,7 @@ private:
     void createSwapChain();
     void createPipeline();
     void createCommandBuffer();
+    void createMesh();
     void drawFrame();
     void cleanup();
     void recreateSwapChain();

@@ -3,6 +3,8 @@
 #include <Vulkan/vulkan.h>
 #include <vector>
 
+class Mesh;
+
 class CommandBuffer {
 public:
     CommandBuffer(VkDevice device, uint32_t graphicsQueueFamily, VkQueue graphicsQueue);
@@ -14,7 +16,7 @@ public:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex,
         VkRenderPass renderPass,
         const std::vector<VkFramebuffer>& framebuffers,
-        VkExtent2D extent, VkPipeline pipeline);
+        VkExtent2D extent, VkPipeline pipeline, Mesh* mesh);
 
     VkCommandBuffer getCommandBuffer(size_t index) const { return commandBuffers[index]; }
     const VkFence& getInFlightFence(size_t index) const { return inFlightFences[index]; }

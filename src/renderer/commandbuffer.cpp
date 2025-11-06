@@ -1,4 +1,5 @@
 #include "commandbuffer.hpp"
+#include "mesh.hpp"
 #include <stdexcept>
 #include <iostream>
 
@@ -75,7 +76,7 @@ void CommandBuffer::createSyncObjects() {
 void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex,
     VkRenderPass renderPass,
     const std::vector<VkFramebuffer>& framebuffers,
-    VkExtent2D extent, VkPipeline pipeline) {
+    VkExtent2D extent, VkPipeline pipeline, Mesh* mesh) {
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -114,7 +115,10 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     scissor.extent = extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    if (mesh) {
+        mesh->bind(commandBuffer);
+        mesh->draw(commandBuffer);
+    }
 
     vkCmdEndRenderPass(commandBuffer);
 
