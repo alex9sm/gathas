@@ -26,7 +26,7 @@ public:
 	size_t getImageCount() const { return swapChainImages.size(); }
 
 	//frambuffer
-	void createFramebuffers(VkRenderPass renderPass);
+	void createFramebuffers(VkRenderPass renderPass, VkImageView depthImageView);
 	const std::vector<VkFramebuffer>& getFramebuffers() const { return swapChainFramebuffers; }
 
 private:

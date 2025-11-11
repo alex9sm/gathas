@@ -16,7 +16,8 @@ public:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex,
         VkRenderPass renderPass,
         const std::vector<VkFramebuffer>& framebuffers,
-        VkExtent2D extent, VkPipeline pipeline, Mesh* mesh);
+        VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+        VkDescriptorSet descriptorSet, Mesh* mesh);
 
     VkCommandBuffer getCommandBuffer(size_t index) const { return commandBuffers[index]; }
     const VkFence& getInFlightFence(size_t index) const { return inFlightFences[index]; }
@@ -36,8 +37,8 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores; 
-    std::vector<VkFence> inFlightFences;             
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 

@@ -1,0 +1,60 @@
+#pragma once
+
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include "../renderer/gpubuffer.hpp"
+#include "vk_mem_alloc.h"
+
+struct CameraUBO {
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
+};
+
+class Camera {
+public:
+    Camera(GLFWwindow* window, VmaAllocator allocator);
+    ~Camera();
+
+    Camera(const Camera&) = delete;
+    Camera& operator=(const Camera&) = delete;
+
+    void update(float deltaTime);
+    void updateUniformBuffer(VmaAllocator allocator, uint32_t currentFrame);
+    void destroy(VmaAllocator allocator);
+
+    VkBuffer getBuffer(uint32_t frame) const { return uniformBuffers[frame].getBuffer(); }
+
+    void setPosition(const glm::vec3& pos) { position = pos; }
+    void setRotation(float yaw, float pitch) { this->yaw = yaw; this->pitch = pitch; }
+    glm::vec3 getPosition() const { return position; }
+
+    static const int MAX_FRAMES_IN_FLIGHT = 2;
+
+private:
+    GLFWwindow* window;
+
+    glm::vec3 position;
+    glm::vec3 front;
+    glm::vec3 up;
+    glm::vec3 right;
+    glm::vec3 worldUp;
+
+    float yaw;
+    float pitch;
+    float fov;
+
+    float movementSpeed;
+    float mouseSensitivity;
+
+    bool firstMouse;
+    double lastX;
+    double lastY;
+
+    GPUBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT];
+
+    void processKeyboard(float deltaTime);
+    void processMouseMovement();
+    void updateCameraVectors();
+    glm::mat4 getViewMatrix() const;
+    glm::mat4 getProjectionMatrix() const;
+};

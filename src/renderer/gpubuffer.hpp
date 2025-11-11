@@ -22,6 +22,7 @@ public:
 
 	VkBuffer getBuffer() const { return buffer; }
 	VkDeviceSize getSize() const { return size; }
+	VmaAllocation getAllocation() const { return allocation; }
 
 private:
 	VkDevice device;

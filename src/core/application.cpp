@@ -26,8 +26,13 @@ void Application::run() {
 
 void Application::mainLoop() {
     while (!window.shouldClose()) {
-
         window.pollEvents();
+
+        float currentFrameTime = static_cast<float>(glfwGetTime());
+        float deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
+
+        camera->update(deltaTime);
         drawFrame();
     }
     vkDeviceWaitIdle(device);
@@ -39,10 +44,13 @@ void Application::initVulkan() {
     pickPhysicalDevice();
     createLogicalDevice();
     createShaderManager();
+    createCamera();
     createSwapChain();
     createPipeline();
     createCommandBuffer();
     createMesh();
+
+    lastFrameTime = static_cast<float>(glfwGetTime());
 }
 
 void Application::createInstance() {
@@ -198,14 +206,19 @@ void Application::createShaderManager() {
     shaderManager = std::make_unique<ShaderManager>(device);
 }
 
+void Application::createCamera() {
+    camera = std::make_unique<Camera>(window.getWindow(), allocator);
+}
+
 void Application::createSwapChain() {
     swapChain = std::make_unique<SwapChain>(physicalDevice, device, surface, window.getWindow());
 }
 
 void Application::createPipeline() {
-    pipeline = std::make_unique<Pipeline>(device, swapChain->getExtent(), swapChain->getImageFormat(),
-                                          shaderManager.get(), "vert.spv", "frag.spv");
-    swapChain->createFramebuffers(pipeline->getRenderPass());
+    pipeline = std::make_unique<Pipeline>(device, physicalDevice, swapChain->getExtent(),
+        swapChain->getImageFormat(), shaderManager.get(),
+        "vert.spv", "frag.spv", camera.get());
+    swapChain->createFramebuffers(pipeline->getRenderPass(), pipeline->getDepthImageView());
 }
 
 void Application::createCommandBuffer() {
@@ -232,9 +245,13 @@ void Application::drawFrame() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
         return;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
+
+    // Update camera uniform buffer
+    camera->updateUniformBuffer(allocator, currentFrame);
 
     VkCommandBuffer cmdBuffer = commandBuffer->getCommandBuffer(currentFrame);
     vkResetCommandBuffer(cmdBuffer, 0);
@@ -244,6 +261,8 @@ void Application::drawFrame() {
         swapChain->getFramebuffers(),
         swapChain->getExtent(),
         pipeline->getPipeline(),
+        pipeline->getPipelineLayout(),
+        pipeline->getDescriptorSet(currentFrame),
         mesh.get());
 
     VkSubmitInfo submitInfo{};
@@ -281,7 +300,8 @@ void Application::drawFrame() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
         recreateSwapChain();
-    } else if (result != VK_SUCCESS) {
+    }
+    else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
 
@@ -296,6 +316,10 @@ void Application::cleanup() {
     commandBuffer.reset();
     pipeline.reset();
     swapChain.reset();
+    if (camera) {
+        camera->destroy(allocator);
+    }
+    camera.reset();
     if (shaderManager) {
         shaderManager->cleanup();
     }

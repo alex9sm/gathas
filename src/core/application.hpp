@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW\glfw3.h>
 #include "window.hpp"
+#include "camera.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
 #include "../renderer/commandbuffer.hpp"
@@ -40,12 +41,15 @@ private:
     VmaAllocator allocator;
 
     std::unique_ptr<ShaderManager> shaderManager;
+    std::unique_ptr<Camera> camera;
     std::unique_ptr<SwapChain> swapChain;
     std::unique_ptr<Pipeline> pipeline;
     std::unique_ptr<CommandBuffer> commandBuffer;
     std::unique_ptr<Mesh> mesh;
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
+
+    float lastFrameTime = 0.0f;
 
     void mainLoop();
     void initVulkan();
@@ -54,6 +58,7 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createShaderManager();
+    void createCamera();
     void createSwapChain();
     void createPipeline();
     void createCommandBuffer();
