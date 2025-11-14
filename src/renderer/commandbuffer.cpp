@@ -1,4 +1,5 @@
 #include "commandbuffer.hpp"
+#include "../ui/imguilayer.hpp"
 #include "mesh.hpp"
 #include <stdexcept>
 #include <iostream>
@@ -77,7 +78,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     VkRenderPass renderPass,
     const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-    VkDescriptorSet descriptorSet, Mesh* mesh) {
+    VkDescriptorSet descriptorSet, Mesh* mesh, ImGuiLayer* imguiLayer) {
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -124,6 +125,10 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     if (mesh) {
         mesh->bind(commandBuffer);
         mesh->drawAll(commandBuffer);
+    }
+
+    if (imguiLayer) {
+        imguiLayer->render(commandBuffer);
     }
 
     vkCmdEndRenderPass(commandBuffer);

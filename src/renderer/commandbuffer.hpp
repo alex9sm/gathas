@@ -4,6 +4,7 @@
 #include <vector>
 
 class Mesh;
+class ImGuiLayer;
 
 class CommandBuffer {
 public:
@@ -17,7 +18,7 @@ public:
         VkRenderPass renderPass,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet, Mesh* mesh);
+        VkDescriptorSet descriptorSet, Mesh* mesh, ImGuiLayer* imguiLayer);
 
     VkCommandBuffer getCommandBuffer(size_t index) const { return commandBuffers[index]; }
     const VkFence& getInFlightFence(size_t index) const { return inFlightFences[index]; }

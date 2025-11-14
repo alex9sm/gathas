@@ -48,6 +48,7 @@ void Application::initVulkan() {
     createSwapChain();
     createPipeline();
     createCommandBuffer();
+    createImGuiLayer();
     createMesh();
 
     lastFrameTime = static_cast<float>(glfwGetTime());
@@ -227,6 +228,15 @@ void Application::createCommandBuffer() {
     commandBuffer = std::make_unique<CommandBuffer>(device, indices.graphicsFamily.value(), graphicsQueue);
 }
 
+void Application::createImGuiLayer() {
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    imguiLayer = std::make_unique<ImGuiLayer>();
+    imguiLayer->init(window.getWindow(), instance, physicalDevice, device,
+        indices.graphicsFamily.value(), graphicsQueue,
+        pipeline->getRenderPass(),
+        static_cast<uint32_t>(swapChain->getImageCount()));
+}
+
 void Application::createMesh() {
     mesh = std::make_unique<Mesh>();
     mesh->loadFromFile("D:/codingfolder/Gathas/assets/models/monkey.obj", allocator, commandBuffer.get());
@@ -257,6 +267,14 @@ void Application::drawFrame() {
     VkCommandBuffer cmdBuffer = commandBuffer->getCommandBuffer(currentFrame);
     vkResetCommandBuffer(cmdBuffer, 0);
 
+    // IMGUI TEST
+    imguiLayer->beginFrame();
+    ImGui::Begin("Test Panel");
+    ImGui::Text("Hello from ImGui!");
+    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+    ImGui::End();
+    imguiLayer->endFrame();
+
     commandBuffer->recordCommandBuffer(cmdBuffer, imageIndex,
         pipeline->getRenderPass(),
         swapChain->getFramebuffers(),
@@ -264,7 +282,8 @@ void Application::drawFrame() {
         pipeline->getPipeline(),
         pipeline->getPipelineLayout(),
         pipeline->getDescriptorSet(currentFrame),
-        mesh.get());
+        mesh.get(),
+        imguiLayer.get());
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -314,6 +333,12 @@ void Application::cleanup() {
         mesh->destroy(allocator);
     }
     mesh.reset();
+
+    if (imguiLayer) {
+        imguiLayer->cleanup();
+    }
+    imguiLayer.reset();
+
     commandBuffer.reset();
     pipeline.reset();
     swapChain.reset();
@@ -352,4 +377,9 @@ void Application::recreateSwapChain() {
 
     createSwapChain();
     createPipeline();
+
+    if (imguiLayer) {
+        imguiLayer->cleanup();
+    }
+    createImGuiLayer();
 }

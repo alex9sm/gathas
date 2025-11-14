@@ -135,6 +135,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dependencies\imgui\imgui.cpp" />
+    <ClCompile Include="dependencies\imgui\imgui_draw.cpp" />
+    <ClCompile Include="dependencies\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="dependencies\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="dependencies\imgui\imgui_tables.cpp" />
+    <ClCompile Include="dependencies\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\core\application.cpp" />
     <ClCompile Include="src\core\camera.cpp" />
     <ClCompile Include="src\renderer\mesh.cpp" />
@@ -145,8 +151,17 @@
     <ClCompile Include="src\renderer\pipeline.cpp" />
     <ClCompile Include="src\renderer\shadermanager.cpp" />
     <ClCompile Include="src\renderer\swapchain.cpp" />
+    <ClCompile Include="src\ui\imguilayer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dependencies\imgui\imconfig.h" />
+    <ClInclude Include="dependencies\imgui\imgui.h" />
+    <ClInclude Include="dependencies\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="dependencies\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="dependencies\imgui\imgui_internal.h" />
+    <ClInclude Include="dependencies\imgui\imstb_rectpack.h" />
+    <ClInclude Include="dependencies\imgui\imstb_textedit.h" />
+    <ClInclude Include="dependencies\imgui\imstb_truetype.h" />
     <ClInclude Include="dependencies\tiny_obj_loader.h" />
     <ClInclude Include="dependencies\vk_mem_alloc.h" />
     <ClInclude Include="src\core\application.hpp" />
@@ -159,6 +174,7 @@
     <ClInclude Include="src\renderer\shadermanager.hpp" />
     <ClInclude Include="src\renderer\swapchain.hpp" />
     <ClInclude Include="src\renderer\vertex.hpp" />
+    <ClInclude Include="src\ui\imguilayer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

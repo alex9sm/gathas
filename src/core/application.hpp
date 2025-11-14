@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW\glfw3.h>
 #include "window.hpp"
+#include "../ui/imguilayer.hpp"
 #include "camera.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
@@ -46,6 +47,8 @@ private:
     std::unique_ptr<Pipeline> pipeline;
     std::unique_ptr<CommandBuffer> commandBuffer;
     std::unique_ptr<Mesh> mesh;
+    std::unique_ptr<ImGuiLayer> imguiLayer;
+
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
 
@@ -66,6 +69,7 @@ private:
     void drawFrame();
     void cleanup();
     void recreateSwapChain();
+    void createImGuiLayer();
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
