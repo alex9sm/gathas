@@ -4,6 +4,7 @@
 #include <array>
 #include <Vulkan/vulkan.h>
 #include "glm/glm.hpp"
+#include "glm/gtx/hash.hpp"
 
 struct Vertex {
 
@@ -41,5 +42,19 @@ struct Vertex {
 
 		return attributeDescriptions;
 	}
+	bool operator==(const Vertex& other) const {
+		return pos == other.pos && normal == other.normal && color == other.color;
+	}
 
 };
+
+namespace std {
+	template<> struct hash<Vertex> {
+		size_t operator()(Vertex const& vertex) const {
+			size_t h1 = hash<glm::vec3>()(vertex.pos);
+			size_t h2 = hash<glm::vec3>()(vertex.normal);
+			size_t h3 = hash<glm::vec3>()(vertex.color);
+			return ((h1 ^ (h2 << 1)) >> 1) ^ (h3 << 1);
+		}
+	};
+}

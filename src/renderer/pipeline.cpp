@@ -50,8 +50,6 @@ void Pipeline::createDescriptorSetLayout() {
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout");
     }
-
-    std::cout << "Descriptor set layout created" << std::endl;
 }
 
 void Pipeline::createDescriptorPool() {
@@ -68,8 +66,6 @@ void Pipeline::createDescriptorPool() {
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool");
     }
-
-    std::cout << "Descriptor pool created" << std::endl;
 }
 
 void Pipeline::createDescriptorSets() {
@@ -103,8 +99,6 @@ void Pipeline::createDescriptorSets() {
 
         vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
     }
-
-    std::cout << "Descriptor sets created and updated" << std::endl;
 }
 
 VkFormat Pipeline::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -205,8 +199,6 @@ void Pipeline::createDepthResources(VkExtent2D swapChainExtent) {
     if (vkCreateImageView(device, &viewInfo, nullptr, &depthImageView) != VK_SUCCESS) {
         throw std::runtime_error("failed to create depth image view");
     }
-
-    std::cout << "Depth resources created" << std::endl;
 }
 
 void Pipeline::createRenderPass(VkFormat swapChainImageFormat) {

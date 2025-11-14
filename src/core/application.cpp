@@ -208,6 +208,7 @@ void Application::createShaderManager() {
 
 void Application::createCamera() {
     camera = std::make_unique<Camera>(window.getWindow(), allocator);
+    camera->setupInputCallbacks(window.getWindow());
 }
 
 void Application::createSwapChain() {
@@ -228,7 +229,7 @@ void Application::createCommandBuffer() {
 
 void Application::createMesh() {
     mesh = std::make_unique<Mesh>();
-    mesh->createCube(allocator, commandBuffer.get());
+    mesh->loadFromFile("D:/codingfolder/Gathas/assets/models/monkey.obj", allocator, commandBuffer.get());
 }
 
 void Application::drawFrame() {

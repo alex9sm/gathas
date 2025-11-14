@@ -30,6 +30,9 @@ public:
 
     static const int MAX_FRAMES_IN_FLIGHT = 2;
 
+    void setupInputCallbacks(GLFWwindow* window);
+    bool isCursorCaptured() const { return cursorCaptured; }
+
 private:
     GLFWwindow* window;
 
@@ -57,4 +60,10 @@ private:
     void updateCameraVectors();
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;
+
+    bool cursorCaptured = true;
+    void handleCursorCapture();
+    void handleCursorRelease();
+    static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };

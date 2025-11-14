@@ -23,7 +23,7 @@ VkShaderModule ShaderManager::getShaderModule(const std::string& filename) {
 
     shaderCache[filename] = shaderModule;
 
-    std::cout << "Loaded and cached shader: " << filename << std::endl;
+    std::cout << "loaded shader: " << filename << std::endl;
 
     return shaderModule;
 }
@@ -33,7 +33,6 @@ void ShaderManager::cleanup() {
         vkDestroyShaderModule(device, pair.second, nullptr);
     }
     shaderCache.clear();
-    std::cout << "cleaned up all cached shaders" << std::endl;
 }
 
 std::vector<char> ShaderManager::readFile(const std::string& filename) {

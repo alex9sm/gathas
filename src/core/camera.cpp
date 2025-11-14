@@ -9,7 +9,7 @@ Camera::Camera(GLFWwindow* window, VmaAllocator allocator)
     yaw(-90.0f),
     pitch(0.0f),
     fov(90.0f),
-    movementSpeed(2.5f),
+    movementSpeed(3.5f),
     mouseSensitivity(0.15f),
     firstMouse(true),
     lastX(0.0),
@@ -23,9 +23,6 @@ Camera::Camera(GLFWwindow* window, VmaAllocator allocator)
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    std::cout << "Camera created" << std::endl;
 }
 
 Camera::~Camera() {
@@ -73,6 +70,11 @@ void Camera::processKeyboard(float deltaTime) {
 }
 
 void Camera::processMouseMovement() {
+
+    if (!cursorCaptured) {
+        return;
+    }
+
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
@@ -80,6 +82,7 @@ void Camera::processMouseMovement() {
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
+        return;
     }
 
     double xoffset = xpos - lastX;
@@ -121,4 +124,39 @@ glm::mat4 Camera::getProjectionMatrix() const {
     float aspect = static_cast<float>(width) / static_cast<float>(height);
 
     return glm::perspective(glm::radians(fov), aspect, 0.1f, 100.0f);
+}
+
+void Camera::setupInputCallbacks(GLFWwindow* win) {
+    window = win;
+    glfwSetWindowUserPointer(window, this);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+void Camera::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    auto camera = reinterpret_cast<Camera*>(glfwGetWindowUserPointer(window));
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && !camera->cursorCaptured) {
+        camera->handleCursorCapture();
+    }
+}
+
+void Camera::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto camera = reinterpret_cast<Camera*>(glfwGetWindowUserPointer(window));
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS && camera->cursorCaptured) {
+        camera->handleCursorRelease();
+    }
+}
+
+void Camera::handleCursorCapture() {
+    cursorCaptured = true;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    firstMouse = true;
+}
+
+void Camera::handleCursorRelease() {
+    cursorCaptured = false;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }

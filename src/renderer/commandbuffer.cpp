@@ -95,7 +95,6 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = extent;
 
-    // Update clear values to include depth
     std::array<VkClearValue, 2> clearValues{};
     clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
     clearValues[1].depthStencil = { 1.0f, 0 };
@@ -124,7 +123,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
     if (mesh) {
         mesh->bind(commandBuffer);
-        mesh->draw(commandBuffer);
+        mesh->drawAll(commandBuffer);
     }
 
     vkCmdEndRenderPass(commandBuffer);
