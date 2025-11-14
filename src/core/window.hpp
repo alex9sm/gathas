@@ -3,8 +3,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW\glfw3.h>
 
-const uint32_t W = 1600;
-const uint32_t H = 900;
+const uint32_t W = 1920;
+const uint32_t H = 1080;
 
 class GatWindow {
 
