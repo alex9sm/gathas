@@ -43,10 +43,14 @@ void ImGuiLayer::init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice 
 
     ImGui_ImplVulkan_Init(&init_info);
 
+    leftPanel = std::make_unique<LeftPanel>();
+
     std::cout << "imgui layer initialized" << std::endl;
 }
 
 void ImGuiLayer::cleanup() {
+    leftPanel.reset();
+
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -90,7 +94,10 @@ void ImGuiLayer::beginFrame() {
     ImGui::NewFrame();
 }
 
-void ImGuiLayer::endFrame() {
+void ImGuiLayer::endFrame(float deltaTime) {
+    if (leftPanel) {
+        leftPanel->render(deltaTime);
+    }
     ImGui::Render();
 }
 

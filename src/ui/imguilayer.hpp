@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include "imgui/imgui.h"
+#include "panels/leftpanel.hpp"
+#include <memory>
 
 class ImGuiLayer {
 public:
@@ -19,7 +21,7 @@ public:
     void cleanup();
 
     void beginFrame();
-    void endFrame();
+    void endFrame(float);
     void render(VkCommandBuffer commandBuffer);
 
     bool wantCaptureMouse() const;
@@ -30,4 +32,6 @@ private:
     VkDescriptorPool imguiDescriptorPool;
 
     void createDescriptorPool(uint32_t imageCount);
+
+    std::unique_ptr<LeftPanel> leftPanel;
 };

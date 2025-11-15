@@ -30,7 +30,6 @@ void Application::mainLoop() {
 
         float currentFrameTime = static_cast<float>(glfwGetTime());
         float deltaTime = currentFrameTime - lastFrameTime;
-        lastFrameTime = currentFrameTime;
 
         camera->update(deltaTime);
         drawFrame();
@@ -261,19 +260,18 @@ void Application::drawFrame() {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    // Update camera uniform buffer
+    // update camera uniform buffer
     camera->updateUniformBuffer(allocator, currentFrame);
 
     VkCommandBuffer cmdBuffer = commandBuffer->getCommandBuffer(currentFrame);
     vkResetCommandBuffer(cmdBuffer, 0);
 
-    // IMGUI TEST
+    // fps and frame time
+    float currentFrameTime = static_cast<float>(glfwGetTime());
+    float deltaTime = currentFrameTime - lastFrameTime;
+    lastFrameTime = currentFrameTime;
     imguiLayer->beginFrame();
-    ImGui::Begin("Test Panel");
-    ImGui::Text("Hello from ImGui!");
-    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::End();
-    imguiLayer->endFrame();
+    imguiLayer->endFrame(deltaTime);
 
     commandBuffer->recordCommandBuffer(cmdBuffer, imageIndex,
         pipeline->getRenderPass(),

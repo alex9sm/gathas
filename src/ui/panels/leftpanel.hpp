@@ -1,0 +1,26 @@
+#pragma once
+
+#include "../imgui/imgui.h"
+
+class LeftPanel {
+public:
+    LeftPanel();
+    ~LeftPanel();
+
+    LeftPanel(const LeftPanel&) = delete;
+    LeftPanel& operator=(const LeftPanel&) = delete;
+
+    void render(float deltaTime);
+    float getWidth() const { return panelWidth; }
+
+private:
+    float frameTime;
+    float fps;
+
+    float accumulatedTime;
+    int frameCount;
+    float displayedFrameTime;
+    float displayedFPS;
+
+    const float panelWidth = 300.0f;
+};

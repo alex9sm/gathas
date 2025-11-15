@@ -60,16 +60,13 @@
     <ClCompile Include="dependencies\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dependencies\imgui\backends\imgui_impl_glfw.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="dependencies\imgui\backends\imgui_impl_vulkan.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="dependencies\imgui\imgui_impl_glfw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dependencies\imgui\imgui_impl_vulkan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\panels\leftpanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -135,6 +132,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\imgui\imstb_truetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\panels\leftpanel.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
