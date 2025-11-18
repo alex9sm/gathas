@@ -36,9 +36,11 @@ void LeftPanel::render(float deltaTime) {
     ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(panelWidth, viewport->Size.y), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(1.0f);
+
+    ImGui::Begin("Debug", nullptr, window_flags);
     ImGui::Text("Frame Time: %.2f ms", displayedFrameTime);
     ImGui::Text("FPS: %.1f", displayedFPS);
-
     ImGui::End();
+
     ImGui::PopStyleColor(5);
 }
