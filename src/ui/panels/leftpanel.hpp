@@ -22,12 +22,5 @@ private:
     float displayedFrameTime;
     float displayedFPS;
 
-    float panelWidth;
-    const float minWidth = 200.0f;
-    const float maxWidth = 600.0f;
-    const float splitterWidth = 4.0f;
-
-    bool isDraggingSplitter;
-
-    void renderSplitter();
+    const float panelWidth = 300.0f;
 };
