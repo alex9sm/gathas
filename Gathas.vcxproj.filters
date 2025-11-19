@@ -147,6 +147,5 @@
     </None>
     <None Include="shaders\vert.spv" />
     <None Include="shaders\frag.spv" />
-    <None Include="src\errors.md" />
   </ItemGroup>
 </Project>
