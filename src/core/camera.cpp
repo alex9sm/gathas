@@ -15,7 +15,7 @@ Camera::Camera(GLFWwindow* window, VmaAllocator allocator)
     yaw(-90.0f),
     pitch(0.0f),
     fov(90.0f),
-    movementSpeed(3.5f),
+    movementSpeed(500.0f),
     mouseSensitivity(0.15f),
     firstMouse(true),
     lastX(0.0),
@@ -134,7 +134,7 @@ glm::mat4 Camera::getProjectionMatrix() const {
 
     float aspect = static_cast<float>(width) / static_cast<float>(height);
 
-    return glm::perspective(glm::radians(fov), aspect, 0.1f, 100.0f);
+    return glm::perspective(glm::radians(fov), aspect, 0.1f, 10000.0f);
 }
 
 void Camera::setupInputCallbacks(GLFWwindow* win) {

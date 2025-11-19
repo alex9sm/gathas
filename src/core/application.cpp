@@ -239,7 +239,7 @@ void Application::createImGuiLayer() {
 
 void Application::createMesh() {
     mesh = std::make_unique<Mesh>();
-    mesh->loadFromFile("D:/codingfolder/Gathas/assets/models/monkey.obj", allocator, commandBuffer.get());
+    mesh->loadFromFile("D:/codingfolder/Gathas/assets/models/sponza/sponza.obj", allocator, commandBuffer.get());
 }
 
 void Application::drawFrame() {
