@@ -24,6 +24,16 @@ struct QueueFamilyIndices {
     }
 };
 
+// forward declare and structs to pass app and camera together
+// this fixes the window resize crash
+class Application;
+class Camera;
+
+struct WindowUserData {
+    Application* app;
+    Camera* camera;
+};
+
 class Application {
 public:
     Application();
@@ -33,6 +43,7 @@ public:
 
 private:
     GatWindow window;
+    WindowUserData windowUserData;
     VkInstance instance;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;

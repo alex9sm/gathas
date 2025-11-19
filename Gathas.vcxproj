@@ -185,6 +185,7 @@
     <None Include="shaders\shadercompile.bat" />
     <None Include="shaders\shader.vert" />
     <None Include="shaders\vert.spv" />
+    <None Include="src\errors.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -2,6 +2,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
+// STRUCT!!
+struct WindowUserData {
+    void* app;
+    Camera* camera;
+};
+
 Camera::Camera(GLFWwindow* window, VmaAllocator allocator)
     : window(window),
     position(0.0f, 0.0f, 0.0f),
@@ -121,6 +127,11 @@ glm::mat4 Camera::getViewMatrix() const {
 glm::mat4 Camera::getProjectionMatrix() const {
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
+
+    if (height == 0) {
+        height = 1;
+    }
+
     float aspect = static_cast<float>(width) / static_cast<float>(height);
 
     return glm::perspective(glm::radians(fov), aspect, 0.1f, 100.0f);
@@ -128,14 +139,15 @@ glm::mat4 Camera::getProjectionMatrix() const {
 
 void Camera::setupInputCallbacks(GLFWwindow* win) {
     window = win;
-    glfwSetWindowUserPointer(window, this);
+    // do not set window user pointer here
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void Camera::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    auto camera = reinterpret_cast<Camera*>(glfwGetWindowUserPointer(window));
+    auto userData = reinterpret_cast<WindowUserData*>(glfwGetWindowUserPointer(window));
+    Camera* camera = userData->camera;
 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && !camera->cursorCaptured) {
         camera->handleCursorCapture();
@@ -143,7 +155,8 @@ void Camera::mouseButtonCallback(GLFWwindow* window, int button, int action, int
 }
 
 void Camera::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    auto camera = reinterpret_cast<Camera*>(glfwGetWindowUserPointer(window));
+    auto userData = reinterpret_cast<WindowUserData*>(glfwGetWindowUserPointer(window));
+    Camera* camera = userData->camera;
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS && camera->cursorCaptured) {
         camera->handleCursorRelease();

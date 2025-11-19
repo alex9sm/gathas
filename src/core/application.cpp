@@ -12,7 +12,9 @@
 Application::Application() {
     window.initWindow();
     window.setFramebufferResizeCallback(framebufferResizeCallback);
-    glfwSetWindowUserPointer(window.getWindow(), this);
+    windowUserData.app = this;
+    windowUserData.camera = nullptr;  // set later when the camera gets created
+    glfwSetWindowUserPointer(window.getWindow(), &windowUserData);
 }
 
 Application::~Application() {
@@ -184,8 +186,6 @@ void Application::createLogicalDevice() {
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    createInfo.enabledLayerCount = 0;
-
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device");
     }
@@ -208,6 +208,7 @@ void Application::createShaderManager() {
 
 void Application::createCamera() {
     camera = std::make_unique<Camera>(window.getWindow(), allocator);
+    windowUserData.camera = camera.get();
     camera->setupInputCallbacks(window.getWindow());
 }
 
@@ -245,7 +246,6 @@ void Application::drawFrame() {
     size_t maxFrames = commandBuffer->getMaxFramesInFlight();
 
     vkWaitForFences(device, 1, &commandBuffer->getInFlightFence(currentFrame), VK_TRUE, UINT64_MAX);
-    vkResetFences(device, 1, &commandBuffer->getInFlightFence(currentFrame));
 
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain->getSwapChain(), UINT64_MAX,
@@ -259,6 +259,7 @@ void Application::drawFrame() {
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
+    vkResetFences(device, 1, &commandBuffer->getInFlightFence(currentFrame));
 
     // update camera uniform buffer
     camera->updateUniformBuffer(allocator, currentFrame);
@@ -355,8 +356,8 @@ void Application::cleanup() {
 }
 
 void Application::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
-    app->framebufferResized = true;
+    auto userData = reinterpret_cast<WindowUserData*>(glfwGetWindowUserPointer(window));
+    userData->app->framebufferResized = true;
 }
 
 void Application::recreateSwapChain() {
