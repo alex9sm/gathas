@@ -13,7 +13,7 @@ Application::Application() {
     window.initWindow();
     window.setFramebufferResizeCallback(framebufferResizeCallback);
     windowUserData.app = this;
-    windowUserData.camera = nullptr;  // set later when the camera gets created
+    windowUserData.camera = nullptr;
     glfwSetWindowUserPointer(window.getWindow(), &windowUserData);
 }
 
@@ -46,9 +46,11 @@ void Application::initVulkan() {
     createLogicalDevice();
     createShaderManager();
     createCamera();
-    createSwapChain();
-    createPipeline();
     createCommandBuffer();
+    createSwapChain();
+    createTextureManager();
+    createMaterialManager();
+    createPipeline();
     createImGuiLayer();
     createMesh();
 
@@ -216,10 +218,22 @@ void Application::createSwapChain() {
     swapChain = std::make_unique<SwapChain>(physicalDevice, device, surface, window.getWindow());
 }
 
+void Application::createTextureManager() {
+    textureManager = std::make_unique<TextureManager>(device, physicalDevice, allocator, commandBuffer.get());
+}
+
+void Application::createMaterialManager() {
+    materialManager = std::make_unique<MaterialManager>(device, textureManager.get());
+    materialManager->loadMaterialsFromFile(
+        "D:/codingfolder/Gathas/assets/sponza/sponza.mtl",
+        "D:/codingfolder/Gathas/assets/sponza/"
+    );
+}
+
 void Application::createPipeline() {
     pipeline = std::make_unique<Pipeline>(device, physicalDevice, swapChain->getExtent(),
         swapChain->getImageFormat(), shaderManager.get(),
-        "vert.spv", "frag.spv", camera.get());
+        "vert.spv", "frag.spv", camera.get(), materialManager.get());
     swapChain->createFramebuffers(pipeline->getRenderPass(), pipeline->getDepthImageView());
 }
 
@@ -239,7 +253,7 @@ void Application::createImGuiLayer() {
 
 void Application::createMesh() {
     mesh = std::make_unique<Mesh>();
-    mesh->loadFromFile("D:/codingfolder/Gathas/assets/models/sponza/sponza.obj", allocator, commandBuffer.get());
+    mesh->loadFromFile("D:/codingfolder/Gathas/assets/sponza/sponza.obj", allocator, commandBuffer.get());
 }
 
 void Application::drawFrame() {
@@ -281,6 +295,7 @@ void Application::drawFrame() {
         pipeline->getPipeline(),
         pipeline->getPipelineLayout(),
         pipeline->getDescriptorSet(currentFrame),
+        materialManager.get(),
         mesh.get(),
         imguiLayer.get());
 
@@ -337,6 +352,17 @@ void Application::cleanup() {
         imguiLayer->cleanup();
     }
     imguiLayer.reset();
+
+    //cleanup material and texture managers before commandBuffer
+    if (materialManager) {
+        materialManager->cleanup();
+    }
+    materialManager.reset();
+
+    if (textureManager) {
+        textureManager->cleanup();
+    }
+    textureManager.reset();
 
     commandBuffer.reset();
     pipeline.reset();

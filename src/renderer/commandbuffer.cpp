@@ -1,6 +1,7 @@
 #include "commandbuffer.hpp"
 #include "../ui/imguilayer.hpp"
 #include "mesh.hpp"
+#include "materialmanager.hpp"
 #include <stdexcept>
 #include <iostream>
 
@@ -78,7 +79,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     VkRenderPass renderPass,
     const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-    VkDescriptorSet descriptorSet, Mesh* mesh, ImGuiLayer* imguiLayer) {
+    VkDescriptorSet descriptorSet, MaterialManager* materialManager, Mesh* mesh, ImGuiLayer* imguiLayer) {
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -124,7 +125,21 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
     if (mesh) {
         mesh->bind(commandBuffer);
-        mesh->drawAll(commandBuffer);
+
+        for (uint32_t i = 0; i < mesh->getSubmeshCount(); ++i) {
+            const std::string& materialName = mesh->getMaterialName(i);
+            const MaterialManager::Material* material = materialManager->getMaterialByName(materialName);
+
+            // default material
+            if (!material && materialManager->getMaterialCount() > 0) {
+                material = materialManager->getMaterial(0);
+            }
+            if (material) {
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
+            }
+            mesh->draw(commandBuffer, i);
+        }
     }
 
     if (imguiLayer) {

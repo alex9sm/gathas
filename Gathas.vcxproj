@@ -113,6 +113,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)dependencies\glfw\lib-vc2022;C:\VulkanSDK\1.4.328.0\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /E /I /Y "$(ProjectDir)assets" "$(OutDir)assets"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -133,6 +136,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)dependencies\glfw\lib-vc2022;C:\VulkanSDK\1.4.328.0\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /E /I /Y "$(ProjectDir)assets" "$(OutDir)assets"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dependencies\imgui\imgui.cpp" />
@@ -143,6 +149,7 @@
     <ClCompile Include="dependencies\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\core\application.cpp" />
     <ClCompile Include="src\core\camera.cpp" />
+    <ClCompile Include="src\renderer\materialmanager.cpp" />
     <ClCompile Include="src\renderer\mesh.cpp" />
     <ClCompile Include="src\core\window.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -151,6 +158,7 @@
     <ClCompile Include="src\renderer\pipeline.cpp" />
     <ClCompile Include="src\renderer\shadermanager.cpp" />
     <ClCompile Include="src\renderer\swapchain.cpp" />
+    <ClCompile Include="src\renderer\texturemanager.cpp" />
     <ClCompile Include="src\ui\imguilayer.cpp" />
     <ClCompile Include="src\ui\panels\leftpanel.cpp" />
   </ItemGroup>
@@ -163,10 +171,13 @@
     <ClInclude Include="dependencies\imgui\imstb_rectpack.h" />
     <ClInclude Include="dependencies\imgui\imstb_textedit.h" />
     <ClInclude Include="dependencies\imgui\imstb_truetype.h" />
+    <ClInclude Include="dependencies\stb_image.h" />
     <ClInclude Include="dependencies\tiny_obj_loader.h" />
     <ClInclude Include="dependencies\vk_mem_alloc.h" />
     <ClInclude Include="src\core\application.hpp" />
     <ClInclude Include="src\core\camera.hpp" />
+    <ClInclude Include="src\renderer\material.hpp" />
+    <ClInclude Include="src\renderer\materialmanager.hpp" />
     <ClInclude Include="src\renderer\mesh.hpp" />
     <ClInclude Include="src\core\window.hpp" />
     <ClInclude Include="src\renderer\commandbuffer.hpp" />
@@ -174,6 +185,7 @@
     <ClInclude Include="src\renderer\pipeline.hpp" />
     <ClInclude Include="src\renderer\shadermanager.hpp" />
     <ClInclude Include="src\renderer\swapchain.hpp" />
+    <ClInclude Include="src\renderer\texturemanager.hpp" />
     <ClInclude Include="src\renderer\vertex.hpp" />
     <ClInclude Include="src\ui\imguilayer.hpp" />
     <ClInclude Include="src\ui\panels\leftpanel.hpp" />

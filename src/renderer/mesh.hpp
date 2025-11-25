@@ -35,6 +35,8 @@ public:
     uint32_t getTotalIndexCount() const { return totalIndexCount; }
     uint32_t getSubmeshCount() const { return static_cast<uint32_t>(submeshes.size()); }
 
+    const std::string& getMaterialName(uint32_t submeshIndex) const;
+
 private:
     GPUBuffer vertexBuffer;
     GPUBuffer indexBuffer;
@@ -44,4 +46,6 @@ private:
     void processObjFile(const std::string& filepath,
         std::vector<Vertex>& outVertices,
         std::vector<uint32_t>& outIndices);
+
+    std::vector<std::string> materialNames;
 };

@@ -5,6 +5,7 @@
 
 class Mesh;
 class ImGuiLayer;
+class MaterialManager;
 
 class CommandBuffer {
 public:
@@ -18,7 +19,7 @@ public:
         VkRenderPass renderPass,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet, Mesh* mesh, ImGuiLayer* imguiLayer);
+        VkDescriptorSet descriptorSet, MaterialManager* materialManager, Mesh* mesh, ImGuiLayer* imguiLayer);
 
     VkCommandBuffer getCommandBuffer(size_t index) const { return commandBuffers[index]; }
     const VkFence& getInFlightFence(size_t index) const { return inFlightFences[index]; }
@@ -27,7 +28,6 @@ public:
 
     size_t getMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
 
-    //transfer command buffer utilities
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 

@@ -6,13 +6,15 @@
 
 class ShaderManager;
 class Camera;
+class MaterialManager;
 
 class Pipeline {
 
 public:
 	Pipeline(VkDevice device, VkPhysicalDevice physicalDevice, VkExtent2D swapChainExtent,
 		VkFormat swapChainImageFormat, ShaderManager* shaderManager,
-		const std::string& vertShaderName, const std::string& fragShaderName, Camera* camera);
+		const std::string& vertShaderName, const std::string& fragShaderName, Camera* camera,
+		MaterialManager* materialManager);
 	~Pipeline();
 
 	Pipeline(const Pipeline&) = delete;
@@ -40,6 +42,8 @@ private:
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
 	VkFormat depthFormat;
+
+	VkDescriptorSetLayout materialDescriptorSetLayout;
 
 	void createDescriptorSetLayout();
 	void createDescriptorPool();

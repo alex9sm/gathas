@@ -2,19 +2,25 @@
 #include "shadermanager.hpp"
 #include "vertex.hpp"
 #include "../core/camera.hpp"
+#include "materialmanager.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <array>
 
 Pipeline::Pipeline(VkDevice device, VkPhysicalDevice physicalDevice, VkExtent2D swapChainExtent,
     VkFormat swapChainImageFormat, ShaderManager* shaderManager,
-    const std::string& vertShaderName, const std::string& fragShaderName, Camera* camera)
+    const std::string& vertShaderName, const std::string& fragShaderName, Camera* camera,
+    MaterialManager* materialManager)
     : device(device), physicalDevice(physicalDevice), graphicsPipeline(nullptr),
     pipelineLayout(nullptr), renderPass(nullptr), camera(camera),
     descriptorSetLayout(nullptr), descriptorPool(nullptr),
+    materialDescriptorSetLayout(VK_NULL_HANDLE),
     depthImage(VK_NULL_HANDLE), depthImageMemory(VK_NULL_HANDLE), depthImageView(VK_NULL_HANDLE) {
 
     createDescriptorSetLayout();
+
+    materialDescriptorSetLayout = materialManager->getDescriptorSetLayout();
+
     createDescriptorPool();
     createDescriptorSets();
     createDepthResources(swapChainExtent);
@@ -375,11 +381,13 @@ void Pipeline::createGraphicsPipeline(VkExtent2D swapChainExtent, VkFormat swapC
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
 
-    // pipeline layout
+    // pipeline layout - set 0 for camera, set 1 for materials
+    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, materialDescriptorSetLayout };
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = setLayouts;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
 

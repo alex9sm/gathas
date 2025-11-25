@@ -50,7 +50,13 @@ void Mesh::processObjFile(const std::string& filepath,
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
+    std::string basedir;
+    size_t lastSlash = filepath.find_last_of("/\\");
+    if (lastSlash != std::string::npos) {
+        basedir = filepath.substr(0, lastSlash + 1);
+    }
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), basedir.c_str())) {
         throw std::runtime_error("failed to load obj file: " + filepath + "\n" + warn + err);
     }
 
@@ -58,11 +64,15 @@ void Mesh::processObjFile(const std::string& filepath,
         std::cout << "tinyobj warning: " << warn << std::endl;
     }
 
+    std::cout << "Loaded " << materials.size() << " materials from OBJ/MTL" << std::endl;
+    for (size_t i = 0; i < materials.size(); ++i) {
+        std::cout << "  Material " << i << ": " << materials[i].name << std::endl;
+    }
+
     std::unordered_map<Vertex, uint32_t> uniqueVertices;
 
     uint32_t currentIndexOffset = 0;
 
-    // shapes (submesh)
     for (const auto& shape : shapes) {
         uint32_t submeshStartIndex = static_cast<uint32_t>(outIndices.size());
         size_t index_offset = 0;
@@ -92,6 +102,16 @@ void Mesh::processObjFile(const std::string& filepath,
 
                 vertex.color = { 1.0f, 1.0f, 1.0f };
 
+                if (idx.texcoord_index >= 0) {
+                    vertex.texCoord = {
+                        attrib.texcoords[2 * idx.texcoord_index + 0],
+                        1.0f - attrib.texcoords[2 * idx.texcoord_index + 1]
+                    };
+                }
+                else {
+                    vertex.texCoord = { 0.0f, 0.0f };
+                }
+
                 if (uniqueVertices.count(vertex) == 0) {
                     uniqueVertices[vertex] = static_cast<uint32_t>(outVertices.size());
                     outVertices.push_back(vertex);
@@ -111,6 +131,10 @@ void Mesh::processObjFile(const std::string& filepath,
         }
 
         submeshes.emplace_back(submeshStartIndex, submeshIndexCount, materialId);
+
+        std::string materialName = (materialId >= 0 && materialId < materials.size()) ? materials[materialId].name : "";
+        materialNames.push_back(materialName);
+        std::cout << "  Submesh " << (submeshes.size() - 1) << " uses material: '" << materialName << "' (id=" << materialId << ")" << std::endl;
     }
 
     if (submeshes.empty()) {
@@ -122,6 +146,7 @@ void Mesh::destroy(VmaAllocator allocator) {
     vertexBuffer.destroy(allocator);
     indexBuffer.destroy(allocator);
     submeshes.clear();
+    materialNames.clear();
     totalIndexCount = 0;
 }
 
@@ -145,4 +170,11 @@ void Mesh::drawAll(VkCommandBuffer commandBuffer) const {
     for (uint32_t i = 0; i < submeshes.size(); ++i) {
         draw(commandBuffer, i);
     }
+}
+
+const std::string& Mesh::getMaterialName(uint32_t submeshIndex) const {
+    if (submeshIndex >= materialNames.size()) {
+        throw std::runtime_error("Invalid submesh index for getMaterialName");
+    }
+    return materialNames[submeshIndex];
 }

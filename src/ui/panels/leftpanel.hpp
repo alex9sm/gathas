@@ -22,5 +22,5 @@ private:
     float displayedFrameTime;
     float displayedFPS;
 
-    const float panelWidth = 300.0f;
+    const float panelWidth = 200.0f;
 };
