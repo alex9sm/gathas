@@ -174,6 +174,7 @@ void Application::createLogicalDevice() {
 
     //specify device specific features
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
 
     // create the logical device
     VkDeviceCreateInfo createInfo{};

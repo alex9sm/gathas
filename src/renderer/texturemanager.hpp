@@ -14,6 +14,7 @@ public:
         VkImageView imageView;
         uint32_t width;
         uint32_t height;
+        uint32_t mipLevels;
     };
 
 private:
@@ -39,6 +40,6 @@ private:
     void createTextureSampler();
     void createDefaultTexture();
     Texture createTextureFromFile(const std::string& filepath);
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    void generateMipmaps(VkImage image, VkFormat format, uint32_t width, uint32_t height, uint32_t mipLevels);
+    uint32_t calculateMipLevels(uint32_t width, uint32_t height);
 };
