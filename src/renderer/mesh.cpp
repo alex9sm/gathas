@@ -64,11 +64,6 @@ void Mesh::processObjFile(const std::string& filepath,
         std::cout << "tinyobj warning: " << warn << std::endl;
     }
 
-    std::cout << "Loaded " << materials.size() << " materials from OBJ/MTL" << std::endl;
-    for (size_t i = 0; i < materials.size(); ++i) {
-        std::cout << "  Material " << i << ": " << materials[i].name << std::endl;
-    }
-
     std::unordered_map<Vertex, uint32_t> uniqueVertices;
 
     uint32_t currentIndexOffset = 0;
@@ -134,7 +129,6 @@ void Mesh::processObjFile(const std::string& filepath,
 
         std::string materialName = (materialId >= 0 && materialId < materials.size()) ? materials[materialId].name : "";
         materialNames.push_back(materialName);
-        std::cout << "  Submesh " << (submeshes.size() - 1) << " uses material: '" << materialName << "' (id=" << materialId << ")" << std::endl;
     }
 
     if (submeshes.empty()) {

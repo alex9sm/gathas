@@ -123,7 +123,6 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             currentMaterial.descriptorSet = VK_NULL_HANDLE;
             hasMaterial = true;
 
-            std::cout << "Found material: " << materialName << std::endl;
         }
         else if (token == "map_Kd" && hasMaterial) {
             std::string texturePath;
@@ -132,7 +131,6 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             std::string fullPath = textureBasePath + texturePath;
 
             currentMaterial.diffuseTexture = textureManager->loadTexture(fullPath);
-            std::cout << "  Loaded diffuse texture: " << fullPath << std::endl;
         }
         else if (token == "map_Disp" || token == "map_Bump" ||
                  token == "map_d" || token == "map_Ka") {

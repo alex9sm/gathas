@@ -23,4 +23,5 @@ private:
     float displayedFPS;
 
     const float panelWidth = 200.0f;
+    const float panelHeight = 600.0f;
 };

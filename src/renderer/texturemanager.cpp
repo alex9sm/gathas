@@ -220,8 +220,6 @@ void TextureManager::createDefaultTexture() {
     if (vkCreateImageView(device, &viewInfo, nullptr, &defaultTexture.imageView) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create default texture image view!");
     }
-
-    std::cout << "Created default texture (1x1 magenta)" << std::endl;
 }
 
 const TextureManager::Texture* TextureManager::getDefaultTexture() const {
@@ -236,13 +234,11 @@ const TextureManager::Texture* TextureManager::loadTexture(const std::string& fi
     try {
         Texture texture = createTextureFromFile(filepath);
         textureCache[filepath] = texture;
-        std::cout << "Loaded texture: " << filepath << " (" << texture.width << "x" << texture.height
-            << ", " << texture.mipLevels << " mip levels)" << std::endl;
         return &textureCache[filepath];
     }
     catch (const std::exception& e) {
-        std::cerr << "Warning: Failed to load texture '" << filepath << "': " << e.what() << std::endl;
-        std::cerr << "Using default texture instead." << std::endl;
+        std::cerr << "Failed to load texture '" << filepath << "': " << e.what() << std::endl;
+        std::cerr << "Using default texture instead" << std::endl;
         return &defaultTexture;
     }
 }
