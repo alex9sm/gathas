@@ -1,4 +1,5 @@
 #include "camera.hpp"
+#include "../ui/imguilayer.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
@@ -19,7 +20,9 @@ Camera::Camera(GLFWwindow* window, VmaAllocator allocator)
     mouseSensitivity(0.15f),
     firstMouse(true),
     lastX(0.0),
-    lastY(0.0) {
+    lastY(0.0),
+    imguiLayer(nullptr),
+    cursorCaptured(false) {
 
     updateCameraVectors();
 
@@ -34,9 +37,17 @@ Camera::Camera(GLFWwindow* window, VmaAllocator allocator)
 Camera::~Camera() {
 }
 
+void Camera::setImGuiLayer(ImGuiLayer* layer) {
+    imguiLayer = layer;
+}
+
 void Camera::update(float deltaTime) {
-    processKeyboard(deltaTime);
-    processMouseMovement();
+    // process camera input only if cursor is captured
+    if (cursorCaptured) {
+        processKeyboard(deltaTime);
+        processMouseMovement();
+    }
+
     updateCameraVectors();
 }
 
@@ -76,7 +87,6 @@ void Camera::processKeyboard(float deltaTime) {
 }
 
 void Camera::processMouseMovement() {
-
     if (!cursorCaptured) {
         return;
     }
@@ -139,15 +149,20 @@ glm::mat4 Camera::getProjectionMatrix() const {
 
 void Camera::setupInputCallbacks(GLFWwindow* win) {
     window = win;
-    // do not set window user pointer here
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetKeyCallback(window, keyCallback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    cursorCaptured = false;
 }
 
 void Camera::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     auto userData = reinterpret_cast<WindowUserData*>(glfwGetWindowUserPointer(window));
     Camera* camera = userData->camera;
+
+    // prevent capturing if clicking on imgui
+    if (camera->imguiLayer && camera->imguiLayer->wantCaptureMouse()) {
+        return;
+    }
 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && !camera->cursorCaptured) {
         camera->handleCursorCapture();
@@ -157,6 +172,11 @@ void Camera::mouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Camera::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     auto userData = reinterpret_cast<WindowUserData*>(glfwGetWindowUserPointer(window));
     Camera* camera = userData->camera;
+
+    // don't release if imgui wants the keyboard
+    if (camera->imguiLayer && camera->imguiLayer->wantCaptureKeyboard()) {
+        return;
+    }
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS && camera->cursorCaptured) {
         camera->handleCursorRelease();

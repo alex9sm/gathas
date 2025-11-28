@@ -5,6 +5,9 @@
 #include "../renderer/gpubuffer.hpp"
 #include "vk_mem_alloc.h"
 
+// forward declaration
+class ImGuiLayer;
+
 struct CameraUBO {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
@@ -32,6 +35,8 @@ public:
 
     void setupInputCallbacks(GLFWwindow* window);
     bool isCursorCaptured() const { return cursorCaptured; }
+
+    void setImGuiLayer(ImGuiLayer* layer);
 
 private:
     GLFWwindow* window;
@@ -61,9 +66,11 @@ private:
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;
 
-    bool cursorCaptured = true;
+    bool cursorCaptured = false;
     void handleCursorCapture();
     void handleCursorRelease();
     static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+    ImGuiLayer* imguiLayer;
 };

@@ -54,6 +54,7 @@ void Application::initVulkan() {
     createImGuiLayer();
     createMesh();
 
+    camera->setImGuiLayer(imguiLayer.get());
     lastFrameTime = static_cast<float>(glfwGetTime());
 }
 
@@ -408,4 +409,6 @@ void Application::recreateSwapChain() {
         imguiLayer->cleanup();
     }
     createImGuiLayer();
+
+    camera->setImGuiLayer(imguiLayer.get());
 }
