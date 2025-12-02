@@ -1,4 +1,5 @@
 #include "imguilayer.hpp"
+#include "../core/scene.hpp"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_vulkan.h"
 #include <stdexcept>
@@ -13,7 +14,7 @@ ImGuiLayer::~ImGuiLayer() {
 
 void ImGuiLayer::init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice,
     VkDevice device, uint32_t graphicsQueueFamily, VkQueue graphicsQueue,
-    VkRenderPass renderPass, uint32_t imageCount) {
+    VkRenderPass renderPass, uint32_t imageCount, Scene* scene) {
     this->device = device;
 
     createDescriptorPool(imageCount);
@@ -44,12 +45,14 @@ void ImGuiLayer::init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice 
     ImGui_ImplVulkan_Init(&init_info);
 
     leftPanel = std::make_unique<LeftPanel>();
+    bottomPanel = std::make_unique<BottomPanel>(scene, "D:/codingfolder/Gathas/assets");
 
     std::cout << "imgui layer initialized" << std::endl;
 }
 
 void ImGuiLayer::cleanup() {
     leftPanel.reset();
+    bottomPanel.reset();
 
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -97,6 +100,9 @@ void ImGuiLayer::beginFrame() {
 void ImGuiLayer::endFrame(float deltaTime) {
     if (leftPanel) {
         leftPanel->render(deltaTime);
+    }
+    if (bottomPanel) {
+        bottomPanel->render();
     }
     ImGui::Render();
 }

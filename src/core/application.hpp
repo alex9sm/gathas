@@ -5,11 +5,11 @@
 #include "window.hpp"
 #include "../ui/imguilayer.hpp"
 #include "camera.hpp"
+#include "scene.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
 #include "../renderer/commandbuffer.hpp"
 #include "../renderer/shadermanager.hpp"
-#include "../renderer/mesh.hpp"
 #include "../renderer/texturemanager.hpp"
 #include "../renderer/materialmanager.hpp"
 #include <Vulkan/vulkan.h>
@@ -61,7 +61,7 @@ private:
     std::unique_ptr<MaterialManager> materialManager;
     std::unique_ptr<Pipeline> pipeline;
     std::unique_ptr<CommandBuffer> commandBuffer;
-    std::unique_ptr<Mesh> mesh;
+    std::unique_ptr<Scene> scene;
     std::unique_ptr<ImGuiLayer> imguiLayer;
 
     uint32_t currentFrame = 0;
@@ -82,7 +82,7 @@ private:
     void createMaterialManager();
     void createPipeline();
     void createCommandBuffer();
-    void createMesh();
+    void createScene();
     void drawFrame();
     void cleanup();
     void recreateSwapChain();

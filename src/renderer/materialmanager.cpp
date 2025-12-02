@@ -73,15 +73,30 @@ const MaterialManager::Material* MaterialManager::getMaterialByName(const std::s
 }
 
 void MaterialManager::loadMaterialsFromFile(const std::string& mtlFilePath, const std::string& textureBasePath) {
-    materials.clear();
-    materialNameToIndex.clear();
+    size_t materialsBeforeLoad = materials.size();
 
     parseMtlFile(mtlFilePath, textureBasePath);
 
-    createDescriptorPool();
-    createDescriptorSets();
+    size_t newMaterialsCount = materials.size() - materialsBeforeLoad;
 
-    std::cout << "Loaded " << materials.size() << " materials from " << mtlFilePath << std::endl;
+    // recreate descriptor pool and sets to accommodate all materials
+    if (newMaterialsCount > 0) {
+        // destroy old descriptor pool if it exists
+        if (descriptorPool != VK_NULL_HANDLE) {
+            vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+            descriptorPool = VK_NULL_HANDLE;
+        }
+
+        // recreate pool and sets for all materials
+        createDescriptorPool();
+        createDescriptorSets();
+
+        std::cout << "Loaded " << newMaterialsCount << " new materials from " << mtlFilePath
+                  << " (Total: " << materials.size() << ")" << std::endl;
+    }
+    else {
+        std::cout << "No new materials loaded from " << mtlFilePath << " (all already exist)" << std::endl;
+    }
 }
 
 void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::string& textureBasePath) {
@@ -95,6 +110,13 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
 
     auto finalizeMaterial = [&]() {
         if (hasMaterial) {
+            // check if material already exists
+            if (materialNameToIndex.find(currentMaterial.name) != materialNameToIndex.end()) {
+                std::cout << "Material '" << currentMaterial.name << "' already exists, skipping" << std::endl;
+                hasMaterial = false;
+                return;
+            }
+
             if (currentMaterial.diffuseTexture == nullptr) {
                 currentMaterial.diffuseTexture = textureManager->getDefaultTexture();
             }

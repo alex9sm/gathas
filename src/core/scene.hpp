@@ -1,0 +1,53 @@
+#pragma once
+
+#include "../renderer/mesh.hpp"
+#include "../renderer/materialmanager.hpp"
+#include "../renderer/texturemanager.hpp"
+#include "../renderer/commandbuffer.hpp"
+#include "vk_mem_alloc.h"
+#include <vector>
+#include <memory>
+#include <string>
+
+class Scene {
+public:
+    struct Model {
+        std::unique_ptr<Mesh> mesh;
+        std::string name;
+        std::string folderPath;
+    };
+
+    Scene(VmaAllocator allocator, CommandBuffer* commandBuffer,
+          MaterialManager* materialManager, TextureManager* textureManager);
+    ~Scene();
+
+    Scene(const Scene&) = delete;
+    Scene& operator=(const Scene&) = delete;
+
+    // load a model from an asset folder
+    void loadModel(const std::string& assetFolderPath, const std::string& modelName);
+
+    // draw all models in the scene
+    void drawAll(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout,
+                 MaterialManager* materialManager) const;
+
+    // clear all models from the scene
+    void clear();
+
+    // remove a specific model by name
+    bool removeModel(const std::string& modelName);
+
+    // check if a model is loaded
+    bool isModelLoaded(const std::string& modelName) const;
+
+    size_t getModelCount() const { return models.size(); }
+    const Model* getModel(size_t index) const;
+
+private:
+    VmaAllocator allocator;
+    CommandBuffer* commandBuffer;
+    MaterialManager* materialManager;
+    TextureManager* textureManager;
+
+    std::vector<Model> models;
+};

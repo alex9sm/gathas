@@ -3,7 +3,7 @@
 #include <Vulkan/vulkan.h>
 #include <vector>
 
-class Mesh;
+class Scene;
 class ImGuiLayer;
 class MaterialManager;
 
@@ -19,7 +19,7 @@ public:
         VkRenderPass renderPass,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet, MaterialManager* materialManager, Mesh* mesh, ImGuiLayer* imguiLayer);
+        VkDescriptorSet descriptorSet, MaterialManager* materialManager, Scene* scene, ImGuiLayer* imguiLayer);
 
     VkCommandBuffer getCommandBuffer(size_t index) const { return commandBuffers[index]; }
     const VkFence& getInFlightFence(size_t index) const { return inFlightFences[index]; }

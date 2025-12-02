@@ -1,9 +1,9 @@
 #define VMA_IMPLEMENTATION
 #include "application.hpp"
+#include "scene.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
 #include "../renderer/shadermanager.hpp"
-#include "../renderer/mesh.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -51,8 +51,8 @@ void Application::initVulkan() {
     createTextureManager();
     createMaterialManager();
     createPipeline();
+    createScene();
     createImGuiLayer();
-    createMesh();
 
     camera->setImGuiLayer(imguiLayer.get());
     lastFrameTime = static_cast<float>(glfwGetTime());
@@ -226,10 +226,6 @@ void Application::createTextureManager() {
 
 void Application::createMaterialManager() {
     materialManager = std::make_unique<MaterialManager>(device, textureManager.get());
-    materialManager->loadMaterialsFromFile(
-        "D:/codingfolder/Gathas/assets/sponza/sponza.mtl",
-        "D:/codingfolder/Gathas/assets/sponza/"
-    );
 }
 
 void Application::createPipeline() {
@@ -250,12 +246,13 @@ void Application::createImGuiLayer() {
     imguiLayer->init(window.getWindow(), instance, physicalDevice, device,
         indices.graphicsFamily.value(), graphicsQueue,
         pipeline->getRenderPass(),
-        static_cast<uint32_t>(swapChain->getImageCount()));
+        static_cast<uint32_t>(swapChain->getImageCount()),
+        scene.get());
 }
 
-void Application::createMesh() {
-    mesh = std::make_unique<Mesh>();
-    mesh->loadFromFile("D:/codingfolder/Gathas/assets/sponza/sponza.obj", allocator, commandBuffer.get());
+void Application::createScene() {
+    scene = std::make_unique<Scene>(allocator, commandBuffer.get(),
+        materialManager.get(), textureManager.get());
 }
 
 void Application::drawFrame() {
@@ -298,7 +295,7 @@ void Application::drawFrame() {
         pipeline->getPipelineLayout(),
         pipeline->getDescriptorSet(currentFrame),
         materialManager.get(),
-        mesh.get(),
+        scene.get(),
         imguiLayer.get());
 
     VkSubmitInfo submitInfo{};
@@ -345,10 +342,7 @@ void Application::drawFrame() {
 }
 
 void Application::cleanup() {
-    if (mesh) {
-        mesh->destroy(allocator);
-    }
-    mesh.reset();
+    scene.reset();
 
     if (imguiLayer) {
         imguiLayer->cleanup();
