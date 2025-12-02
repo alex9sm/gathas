@@ -1,5 +1,6 @@
 #include "leftpanel.hpp"
 #include <glm/common.hpp>
+#include "../consolecapture.hpp"
 
 LeftPanel::LeftPanel()
     : frameTime(0.0f), fps(0.0f),
@@ -37,6 +38,31 @@ void LeftPanel::render(float deltaTime) {
     ImGui::Begin("Debug", nullptr, window_flags);
     ImGui::Text("Frame Time: %.2f ms", displayedFrameTime);
     ImGui::Text("FPS: %.1f", displayedFPS);
+
+    ImGui::Separator();
+
+    if (ImGui::Button("Clear Console")) {
+        ConsoleCapture::getInstance().clear();
+    }
+
+    ImGui::Separator();
+
+    // console output window
+    ImGui::BeginChild("ConsoleOutput", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+    ConsoleCapture::getInstance().update();
+    const auto& lines = ConsoleCapture::getInstance().getLines();
+
+    for (const auto& line : lines) {
+        ImGui::TextUnformatted(line.c_str());
+    }
+
+    if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
+        ImGui::SetScrollHereY(1.0f);
+    }
+
+    ImGui::EndChild();
+
     ImGui::End();
 
     ImGui::PopStyleColor(5);

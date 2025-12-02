@@ -187,6 +187,7 @@
     <ClInclude Include="src\renderer\swapchain.hpp" />
     <ClInclude Include="src\renderer\texturemanager.hpp" />
     <ClInclude Include="src\renderer\vertex.hpp" />
+    <ClInclude Include="src\ui\consolecapture.hpp" />
     <ClInclude Include="src\ui\imguilayer.hpp" />
     <ClInclude Include="src\ui\panels\leftpanel.hpp" />
   </ItemGroup>

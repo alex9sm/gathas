@@ -24,4 +24,6 @@ private:
 
     const float panelWidth = 200.0f;
     const float panelHeight = 600.0f;
+
+    bool autoScroll = true;
 };
