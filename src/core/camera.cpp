@@ -55,7 +55,7 @@ void Camera::updateUniformBuffer(VmaAllocator allocator, uint32_t currentFrame) 
     CameraUBO ubo{};
     ubo.view = getViewMatrix();
     ubo.proj = getProjectionMatrix();
-    ubo.proj[1][1] *= 1;
+    //ubo.proj[1][1] *= -1;
 
     ubo.invView = glm::inverse(ubo.view);
     ubo.invProj = glm::inverse(ubo.proj);
