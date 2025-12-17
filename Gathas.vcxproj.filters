@@ -81,6 +81,9 @@
     <ClCompile Include="src\ui\panels\bottompanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\renderer\gbuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\window.hpp">
@@ -170,6 +173,9 @@
     <ClInclude Include="src\ui\panels\bottompanel.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\renderer\gbuffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -180,5 +186,13 @@
     </None>
     <None Include="shaders\vert.spv" />
     <None Include="shaders\frag.spv" />
+    <None Include="shaders\lighting.vert" />
+    <None Include="shaders\lighting.frag" />
+    <None Include="shaders\geometry.vert" />
+    <None Include="shaders\geometry.frag" />
+    <None Include="shaders\geometry_frag.spv" />
+    <None Include="shaders\geometry_vert.spv" />
+    <None Include="shaders\lighting_frag.spv" />
+    <None Include="shaders\lighting_vert.spv" />
   </ItemGroup>
 </Project>

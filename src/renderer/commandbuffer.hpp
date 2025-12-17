@@ -15,11 +15,34 @@ public:
     CommandBuffer(const CommandBuffer&) = delete;
     CommandBuffer& operator=(const CommandBuffer&) = delete;
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-        VkRenderPass renderPass,
-        const std::vector<VkFramebuffer>& framebuffers,
+    void recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+        VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet, MaterialManager* materialManager, Scene* scene, ImGuiLayer* imguiLayer);
+        VkDescriptorSet descriptorSet, MaterialManager* materialManager, Scene* scene);
+
+    void recordLightingPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+        VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+        VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+        VkDescriptorSet cameraDescriptorSet, VkDescriptorSet gbufferDescriptorSet);
+
+    void recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+        VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+        VkExtent2D extent);
+
+    void recordImGuiPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+        VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+        VkExtent2D extent, ImGuiLayer* imguiLayer);
+
+    void recordFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkExtent2D extent,
+        VkRenderPass geometryRenderPass, const std::vector<VkFramebuffer>& geometryFramebuffers,
+        VkPipeline geometryPipeline, VkPipelineLayout geometryPipelineLayout,
+        VkDescriptorSet cameraDescriptorSet, MaterialManager* materialManager, Scene* scene,
+        VkRenderPass lightingRenderPass, const std::vector<VkFramebuffer>& lightingFramebuffers,
+        VkPipeline lightingPipeline, VkPipelineLayout lightingPipelineLayout,
+        VkDescriptorSet gbufferDescriptorSet,
+        VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
+        VkRenderPass imguiRenderPass, const std::vector<VkFramebuffer>& imguiFramebuffers,
+        ImGuiLayer* imguiLayer);
 
     VkCommandBuffer getCommandBuffer(size_t index) const { return commandBuffers[index]; }
     const VkFence& getInFlightFence(size_t index) const { return inFlightFences[index]; }

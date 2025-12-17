@@ -12,6 +12,7 @@
 #include "../renderer/shadermanager.hpp"
 #include "../renderer/texturemanager.hpp"
 #include "../renderer/materialmanager.hpp"
+#include "../renderer/gbuffer.hpp"
 #include <Vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 #include <optional>
@@ -59,6 +60,7 @@ private:
     std::unique_ptr<SwapChain> swapChain;
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<MaterialManager> materialManager;
+    std::unique_ptr<GBuffer> gbuffer;
     std::unique_ptr<Pipeline> pipeline;
     std::unique_ptr<CommandBuffer> commandBuffer;
     std::unique_ptr<Scene> scene;
@@ -80,6 +82,7 @@ private:
     void createSwapChain();
     void createTextureManager();
     void createMaterialManager();
+    void createGBuffer();
     void createPipeline();
     void createCommandBuffer();
     void createScene();

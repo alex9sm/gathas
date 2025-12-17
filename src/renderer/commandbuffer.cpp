@@ -75,20 +75,10 @@ void CommandBuffer::createSyncObjects() {
 
 }
 
-void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-    VkRenderPass renderPass,
-    const std::vector<VkFramebuffer>& framebuffers,
+void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-    VkDescriptorSet descriptorSet, MaterialManager* materialManager, Scene* scene, ImGuiLayer* imguiLayer) {
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
-    beginInfo.pInheritanceInfo = nullptr;
-
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
+    VkDescriptorSet descriptorSet, MaterialManager* materialManager, Scene* scene) {
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -97,9 +87,10 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = extent;
 
-    std::array<VkClearValue, 2> clearValues{};
+    std::array<VkClearValue, 3> clearValues{};
     clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-    clearValues[1].depthStencil = { 1.0f, 0 };
+    clearValues[1].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+    clearValues[2].depthStencil = { 1.0f, 0 };
 
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
@@ -127,11 +118,127 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
         scene->drawAll(commandBuffer, pipelineLayout, materialManager);
     }
 
+    vkCmdEndRenderPass(commandBuffer);
+}
+
+void CommandBuffer::recordLightingPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+    VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+    VkDescriptorSet cameraDescriptorSet, VkDescriptorSet gbufferDescriptorSet) {
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = framebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = extent;
+
+    VkClearValue clearValue{};
+    clearValue.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearValue;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipelineLayout, 0, 1, &cameraDescriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipelineLayout, 1, 1, &gbufferDescriptorSet, 0, nullptr);
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(extent.width);
+    viewport.height = static_cast<float>(extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = extent;
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+    vkCmdEndRenderPass(commandBuffer);
+}
+
+void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+    VkExtent2D extent) {
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = framebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = extent;
+
+    renderPassInfo.clearValueCount = 0;
+    renderPassInfo.pClearValues = nullptr;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdEndRenderPass(commandBuffer);
+}
+
+void CommandBuffer::recordImGuiPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+    VkExtent2D extent, ImGuiLayer* imguiLayer) {
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = framebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = extent;
+
+    renderPassInfo.clearValueCount = 0;
+    renderPassInfo.pClearValues = nullptr;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
     if (imguiLayer) {
         imguiLayer->render(commandBuffer);
     }
 
     vkCmdEndRenderPass(commandBuffer);
+}
+
+void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkExtent2D extent,
+    VkRenderPass geometryRenderPass, const std::vector<VkFramebuffer>& geometryFramebuffers,
+    VkPipeline geometryPipeline, VkPipelineLayout geometryPipelineLayout,
+    VkDescriptorSet cameraDescriptorSet, MaterialManager* materialManager, Scene* scene,
+    VkRenderPass lightingRenderPass, const std::vector<VkFramebuffer>& lightingFramebuffers,
+    VkPipeline lightingPipeline, VkPipelineLayout lightingPipelineLayout,
+    VkDescriptorSet gbufferDescriptorSet,
+    VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
+    VkRenderPass imguiRenderPass, const std::vector<VkFramebuffer>& imguiFramebuffers,
+    ImGuiLayer* imguiLayer) {
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0;
+    beginInfo.pInheritanceInfo = nullptr;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
+    }
+
+    recordGeometryPass(commandBuffer, imageIndex, geometryRenderPass, geometryFramebuffers,
+        extent, geometryPipeline, geometryPipelineLayout, cameraDescriptorSet,
+        materialManager, scene);
+
+    recordLightingPass(commandBuffer, imageIndex, lightingRenderPass, lightingFramebuffers,
+        extent, lightingPipeline, lightingPipelineLayout, cameraDescriptorSet,
+        gbufferDescriptorSet);
+
+    recordForwardPass(commandBuffer, imageIndex, forwardRenderPass, forwardFramebuffers, extent);
+
+    recordImGuiPass(commandBuffer, imageIndex, imguiRenderPass, imguiFramebuffers,
+        extent, imguiLayer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");

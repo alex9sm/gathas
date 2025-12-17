@@ -50,6 +50,7 @@ void Application::initVulkan() {
     createSwapChain();
     createTextureManager();
     createMaterialManager();
+    createGBuffer();
     createPipeline();
     createScene();
     createImGuiLayer();
@@ -228,11 +229,15 @@ void Application::createMaterialManager() {
     materialManager = std::make_unique<MaterialManager>(device, textureManager.get());
 }
 
+void Application::createGBuffer() {
+    gbuffer = std::make_unique<GBuffer>(device, physicalDevice, allocator, swapChain->getExtent());
+}
+
 void Application::createPipeline() {
-    pipeline = std::make_unique<Pipeline>(device, physicalDevice, swapChain->getExtent(),
-        swapChain->getImageFormat(), shaderManager.get(),
-        "vert.spv", "frag.spv", camera.get(), materialManager.get());
-    swapChain->createFramebuffers(pipeline->getRenderPass(), pipeline->getDepthImageView());
+    pipeline = std::make_unique<Pipeline>(device, physicalDevice);
+    pipeline->initialize(swapChain->getExtent(), swapChain->getImageFormat(),
+        shaderManager.get(), "geometry_vert.spv", "geometry_frag.spv",
+        camera.get(), materialManager.get(), gbuffer.get(), swapChain->getImageViews());
 }
 
 void Application::createCommandBuffer() {
@@ -245,7 +250,7 @@ void Application::createImGuiLayer() {
     imguiLayer = std::make_unique<ImGuiLayer>();
     imguiLayer->init(window.getWindow(), instance, physicalDevice, device,
         indices.graphicsFamily.value(), graphicsQueue,
-        pipeline->getRenderPass(),
+        pipeline->getImGuiRenderPass(),
         static_cast<uint32_t>(swapChain->getImageCount()),
         scene.get());
 }
@@ -287,15 +292,19 @@ void Application::drawFrame() {
     imguiLayer->beginFrame();
     imguiLayer->endFrame(deltaTime);
 
-    commandBuffer->recordCommandBuffer(cmdBuffer, imageIndex,
-        pipeline->getRenderPass(),
-        swapChain->getFramebuffers(),
-        swapChain->getExtent(),
-        pipeline->getPipeline(),
-        pipeline->getPipelineLayout(),
-        pipeline->getDescriptorSet(currentFrame),
-        materialManager.get(),
-        scene.get(),
+    commandBuffer->recordFrame(cmdBuffer, imageIndex, swapChain->getExtent(),
+        pipeline->getGeometryRenderPass(),
+        pipeline->getGeometryFramebuffers(),
+        pipeline->getGeometryPipeline(), pipeline->getPipelineLayout(),
+        pipeline->getDescriptorSet(currentFrame), materialManager.get(), scene.get(),
+        pipeline->getLightingRenderPass(),
+        pipeline->getLightingFramebuffers(),
+        pipeline->getLightingPipeline(), pipeline->getLightingPipelineLayout(),
+        gbuffer->getDescriptorSet(currentFrame),
+        pipeline->getForwardRenderPass(),
+        pipeline->getForwardFramebuffers(),
+        pipeline->getImGuiRenderPass(),
+        pipeline->getImGuiFramebuffers(),
         imguiLayer.get());
 
     VkSubmitInfo submitInfo{};
@@ -362,6 +371,12 @@ void Application::cleanup() {
 
     commandBuffer.reset();
     pipeline.reset();
+
+    if (gbuffer) {
+        gbuffer->cleanup();
+    }
+    gbuffer.reset();
+
     swapChain.reset();
     if (camera) {
         camera->destroy(allocator);
@@ -397,7 +412,12 @@ void Application::recreateSwapChain() {
     pipeline.reset();
 
     createSwapChain();
+
+    gbuffer->recreate(swapChain->getExtent(), VK_NULL_HANDLE);
+
     createPipeline();
+
+    gbuffer->updateDescriptorSets(pipeline->getDepthImageView());
 
     if (imguiLayer) {
         imguiLayer->cleanup();

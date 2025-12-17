@@ -27,7 +27,7 @@ void BottomPanel::scanAssetFolders() {
             }
         }
 
-        std::cout << "Found " << assetFolders.size() << " asset folders" << std::endl;
+        std::cout << "found " << assetFolders.size() << " asset folders" << std::endl;
     }
     catch (const std::exception& e) {
         std::cerr << "Error scanning asset folders: " << e.what() << std::endl;
