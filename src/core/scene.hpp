@@ -4,10 +4,13 @@
 #include "../renderer/materialmanager.hpp"
 #include "../renderer/texturemanager.hpp"
 #include "../renderer/commandbuffer.hpp"
+#include "../renderer/indirectdrawing.hpp"
+#include "../renderer/gpubuffer.hpp"
 #include "vk_mem_alloc.h"
 #include <vector>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 class Scene {
 public:
@@ -43,6 +46,14 @@ public:
     size_t getModelCount() const { return models.size(); }
     const Model* getModel(size_t index) const;
 
+    const std::unordered_map<const MaterialManager::Material*, MaterialBatch>& getMaterialBatches() const {
+        return materialBatches;
+    }
+
+    // bind unified vertex/index buffers to command buffer
+    void bindUnifiedBuffers(VkCommandBuffer commandBuffer) const;
+    bool hasUnifiedBuffers() const { return unifiedVertexBuffer.getBuffer() != VK_NULL_HANDLE; }
+
 private:
     VmaAllocator allocator;
     CommandBuffer* commandBuffer;
@@ -50,4 +61,11 @@ private:
     TextureManager* textureManager;
 
     std::vector<Model> models;
+    std::unordered_map<const MaterialManager::Material*, MaterialBatch> materialBatches;
+
+    GPUBuffer unifiedVertexBuffer;
+    GPUBuffer unifiedIndexBuffer;
+
+    void buildMaterialBatches();
+    void buildUnifiedBuffers();
 };

@@ -151,6 +151,7 @@
     <ClCompile Include="src\core\camera.cpp" />
     <ClCompile Include="src\core\scene.cpp" />
     <ClCompile Include="src\renderer\gbuffer.cpp" />
+    <ClCompile Include="src\renderer\indirectdrawing.cpp" />
     <ClCompile Include="src\renderer\materialmanager.cpp" />
     <ClCompile Include="src\renderer\mesh.cpp" />
     <ClCompile Include="src\core\window.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="src\core\camera.hpp" />
     <ClInclude Include="src\core\scene.hpp" />
     <ClInclude Include="src\renderer\gbuffer.hpp" />
+    <ClInclude Include="src\renderer\indirectdrawing.hpp" />
     <ClInclude Include="src\renderer\material.hpp" />
     <ClInclude Include="src\renderer\materialmanager.hpp" />
     <ClInclude Include="src\renderer\mesh.hpp" />

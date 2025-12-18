@@ -2,6 +2,7 @@
 #include "../ui/imguilayer.hpp"
 #include "../core/scene.hpp"
 #include "materialmanager.hpp"
+#include "indirectdrawing.hpp"
 #include <stdexcept>
 #include <iostream>
 
@@ -114,8 +115,29 @@ void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t i
     scissor.extent = extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    if (scene) {
-        scene->drawAll(commandBuffer, pipelineLayout, materialManager);
+    if (scene && scene->hasUnifiedBuffers()) {
+        // bind unified vertex/index buffers once for all draws
+        scene->bindUnifiedBuffers(commandBuffer);
+
+        const auto& materialBatches = scene->getMaterialBatches();
+
+        for (const auto& [material, batch] : materialBatches) {
+            if (material && material->descriptorSet != VK_NULL_HANDLE) {
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
+            }
+
+            // issue single indirect draw for all commands in this batch
+            if (!batch.drawCommands.empty()) {
+                vkCmdDrawIndexedIndirect(
+                    commandBuffer,
+                    batch.indirectBuffer.getBuffer(),
+                    0,
+                    static_cast<uint32_t>(batch.drawCommands.size()),
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
+            }
+        }
     }
 
     vkCmdEndRenderPass(commandBuffer);

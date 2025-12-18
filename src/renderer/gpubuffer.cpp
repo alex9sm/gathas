@@ -8,6 +8,26 @@ GPUBuffer::GPUBuffer() : buffer(nullptr), allocation(nullptr), size(0) {
 
 GPUBuffer::~GPUBuffer() {}
 
+GPUBuffer::GPUBuffer(GPUBuffer&& other) noexcept
+	: device(other.device), buffer(other.buffer), allocation(other.allocation), size(other.size) {
+	other.buffer = VK_NULL_HANDLE;
+	other.allocation = VK_NULL_HANDLE;
+	other.size = 0;
+}
+
+GPUBuffer& GPUBuffer::operator=(GPUBuffer&& other) noexcept {
+	if (this != &other) {
+		device = other.device;
+		buffer = other.buffer;
+		allocation = other.allocation;
+		size = other.size;
+		other.buffer = VK_NULL_HANDLE;
+		other.allocation = VK_NULL_HANDLE;
+		other.size = 0;
+	}
+	return *this;
+}
+
 void GPUBuffer::create(VmaAllocator allocator, VkDeviceSize bufferSize,
     VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage,
     const void* data, CommandBuffer* commandBuffer) {

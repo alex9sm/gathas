@@ -14,8 +14,9 @@ Mesh::~Mesh() {
 }
 
 void Mesh::loadFromFile(const std::string& filepath, VmaAllocator allocator, CommandBuffer* commandBuffer) {
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
+    // clear any existing data
+    vertices.clear();
+    indices.clear();
 
     processObjFile(filepath, vertices, indices);
 
@@ -141,6 +142,8 @@ void Mesh::destroy(VmaAllocator allocator) {
     indexBuffer.destroy(allocator);
     submeshes.clear();
     materialNames.clear();
+    vertices.clear();
+    indices.clear();
     totalIndexCount = 0;
 }
 

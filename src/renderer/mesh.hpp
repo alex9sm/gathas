@@ -34,14 +34,24 @@ public:
 
     uint32_t getTotalIndexCount() const { return totalIndexCount; }
     uint32_t getSubmeshCount() const { return static_cast<uint32_t>(submeshes.size()); }
+    const SubMesh& getSubmesh(uint32_t index) const { return submeshes[index]; }
 
     const std::string& getMaterialName(uint32_t submeshIndex) const;
+
+    // access to vertex/index data for unified buffer building
+    const std::vector<Vertex>& getVertices() const { return vertices; }
+    const std::vector<uint32_t>& getIndices() const { return indices; }
+    uint32_t getVertexCount() const { return static_cast<uint32_t>(vertices.size()); }
 
 private:
     GPUBuffer vertexBuffer;
     GPUBuffer indexBuffer;
     std::vector<SubMesh> submeshes;
     uint32_t totalIndexCount;
+
+    // cpu data retained for unified buffer building
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 
     void processObjFile(const std::string& filepath,
         std::vector<Vertex>& outVertices,

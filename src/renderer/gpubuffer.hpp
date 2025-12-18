@@ -14,6 +14,9 @@ public:
 	GPUBuffer(const GPUBuffer&) = delete;
 	GPUBuffer& operator=(const GPUBuffer&) = delete;
 
+	GPUBuffer(GPUBuffer&& other) noexcept;
+	GPUBuffer& operator=(GPUBuffer&& other) noexcept;
+
 	void create(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage,
 		VmaMemoryUsage memoryUsage, const void* data = nullptr,
 		CommandBuffer* commandBuffer = nullptr);
