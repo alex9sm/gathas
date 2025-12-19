@@ -125,6 +125,18 @@ void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t i
             if (material && material->descriptorSet != VK_NULL_HANDLE) {
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
+
+                // push material constants
+                struct MaterialPushConstants {
+                    glm::vec4 diffuseColor;
+                    uint32_t hasTexture;
+                } pushConstants;
+
+                pushConstants.diffuseColor = material->diffuseColor;
+                pushConstants.hasTexture = material->hasTexture ? 1u : 0u;
+
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                    0, 20, &pushConstants);
             }
 
             // issue single indirect draw for all commands in this batch
@@ -146,7 +158,8 @@ void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t i
 void CommandBuffer::recordLightingPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
     VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
-    VkDescriptorSet cameraDescriptorSet, VkDescriptorSet gbufferDescriptorSet) {
+    VkDescriptorSet cameraDescriptorSet, VkDescriptorSet gbufferDescriptorSet,
+    VkDescriptorSet lightDescriptorSet) {
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -168,6 +181,8 @@ void CommandBuffer::recordLightingPass(VkCommandBuffer commandBuffer, uint32_t i
         pipelineLayout, 0, 1, &cameraDescriptorSet, 0, nullptr);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipelineLayout, 1, 1, &gbufferDescriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipelineLayout, 2, 1, &lightDescriptorSet, 0, nullptr);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -235,7 +250,7 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
     VkDescriptorSet cameraDescriptorSet, MaterialManager* materialManager, Scene* scene,
     VkRenderPass lightingRenderPass, const std::vector<VkFramebuffer>& lightingFramebuffers,
     VkPipeline lightingPipeline, VkPipelineLayout lightingPipelineLayout,
-    VkDescriptorSet gbufferDescriptorSet,
+    VkDescriptorSet gbufferDescriptorSet, VkDescriptorSet lightDescriptorSet,
     VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
     VkRenderPass imguiRenderPass, const std::vector<VkFramebuffer>& imguiFramebuffers,
     ImGuiLayer* imguiLayer) {
@@ -255,7 +270,7 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
 
     recordLightingPass(commandBuffer, imageIndex, lightingRenderPass, lightingFramebuffers,
         extent, lightingPipeline, lightingPipelineLayout, cameraDescriptorSet,
-        gbufferDescriptorSet);
+        gbufferDescriptorSet, lightDescriptorSet);
 
     recordForwardPass(commandBuffer, imageIndex, forwardRenderPass, forwardFramebuffers, extent);
 

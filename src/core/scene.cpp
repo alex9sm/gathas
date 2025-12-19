@@ -55,6 +55,18 @@ void Scene::drawAll(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayo
         if (material && material->descriptorSet != VK_NULL_HANDLE) {
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
+
+            // push material constants
+            struct MaterialPushConstants {
+                glm::vec4 diffuseColor;
+                uint32_t hasTexture;
+            } pushConstants;
+
+            pushConstants.diffuseColor = material->diffuseColor;
+            pushConstants.hasTexture = material->hasTexture ? 1u : 0u;
+
+            vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                0, 20, &pushConstants); // vec4 (16) + uint (4) = 20 bytes
         }
 
         for (const auto& cmd : batch.drawCommands) {

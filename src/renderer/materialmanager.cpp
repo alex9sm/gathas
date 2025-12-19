@@ -117,8 +117,12 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
                 return;
             }
 
+            // if no texture was specified, use constant color mode
             if (currentMaterial.diffuseTexture == nullptr) {
-                currentMaterial.diffuseTexture = textureManager->getDefaultTexture();
+                currentMaterial.hasTexture = false;
+                currentMaterial.diffuseTexture = textureManager->getDefaultTexture(); // still need a texture for descriptor set
+            } else {
+                currentMaterial.hasTexture = true;
             }
 
             materialNameToIndex[currentMaterial.name] = static_cast<uint32_t>(materials.size());
@@ -143,8 +147,15 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             currentMaterial.name = materialName;
             currentMaterial.diffuseTexture = nullptr;
             currentMaterial.descriptorSet = VK_NULL_HANDLE;
+            currentMaterial.diffuseColor = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f); // magenta default
+            currentMaterial.hasTexture = false;
             hasMaterial = true;
 
+        }
+        else if (token == "Kd" && hasMaterial) {
+            float r, g, b;
+            iss >> r >> g >> b;
+            currentMaterial.diffuseColor = glm::vec4(r, g, b, 1.0f);
         }
         else if (token == "map_Kd" && hasMaterial) {
             std::string texturePath;

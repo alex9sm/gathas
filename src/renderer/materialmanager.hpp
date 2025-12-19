@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <glm/glm.hpp>
 
 class MaterialManager {
 public:
@@ -12,6 +13,8 @@ public:
         std::string name;
         const TextureManager::Texture* diffuseTexture;
         VkDescriptorSet descriptorSet;
+        glm::vec4 diffuseColor;
+        bool hasTexture;
     };
 
     MaterialManager(VkDevice device, TextureManager* textureManager);

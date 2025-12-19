@@ -2,6 +2,7 @@
 #include "shadermanager.hpp"
 #include "vertex.hpp"
 #include "../core/camera.hpp"
+#include "../core/directionallight.hpp"
 #include "materialmanager.hpp"
 #include "gbuffer.hpp"
 #include <iostream>
@@ -22,7 +23,8 @@ Pipeline::Pipeline(VkDevice device, VkPhysicalDevice physicalDevice)
 void Pipeline::initialize(VkExtent2D swapChainExtent, VkFormat swapChainImageFormat,
     ShaderManager* shaderManager, const std::string& vertShaderName,
     const std::string& fragShaderName, Camera* camera, MaterialManager* materialManager,
-    GBuffer* gbuffer, const std::vector<VkImageView>& swapChainImageViews) {
+    GBuffer* gbuffer, const std::vector<VkImageView>& swapChainImageViews,
+    DirectionalLight* light) {
 
     this->swapChainExtent = swapChainExtent;
     this->swapChainImageFormat = swapChainImageFormat;
@@ -42,7 +44,7 @@ void Pipeline::initialize(VkExtent2D swapChainExtent, VkFormat swapChainImageFor
     createImGuiRenderPass(swapChainImageFormat);
     createImGuiFramebuffers(swapChainImageViews);
     createGeometryPipeline(shaderManager);
-    createLightingPipeline(shaderManager, gbuffer);
+    createLightingPipeline(shaderManager, gbuffer, light);
 
     gbuffer->updateDescriptorSets(depthImageView);
 }
@@ -709,12 +711,18 @@ void Pipeline::createGeometryPipeline(ShaderManager* shaderManager) {
     // pipeline layout - set 0 for camera, set 1 for materials
     VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, materialDescriptorSetLayout };
 
+    // push constant for material color (vec4 + uint = 20 bytes)
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = 20; // vec4 diffuseColor (16 bytes) + uint hasTexture (4 bytes)
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 2;
     pipelineLayoutInfo.pSetLayouts = setLayouts;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout");
@@ -745,18 +753,19 @@ void Pipeline::createGeometryPipeline(ShaderManager* shaderManager) {
     std::cout << "geometry pipeline created" << std::endl;
 }
 
-void Pipeline::createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer) {
+void Pipeline::createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light) {
     // Get descriptor set layout from GBuffer
     lightingDescriptorSetLayout = gbuffer->getDescriptorSetLayout();
 
-    // Create pipeline layout with two descriptor set layouts
+    // Create pipeline layout with three descriptor set layouts
     // Set 0: camera UBO (for inverse view-projection matrix for depth reconstruction)
     // Set 1: G-Buffer samplers
-    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, lightingDescriptorSetLayout };
+    // Set 2: Light UBO
+    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, lightingDescriptorSetLayout, light->getDescriptorSetLayout() };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.setLayoutCount = 3;
     pipelineLayoutInfo.pSetLayouts = setLayouts;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;

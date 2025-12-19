@@ -8,6 +8,7 @@ class ShaderManager;
 class Camera;
 class MaterialManager;
 class GBuffer;
+class DirectionalLight;
 
 class Pipeline {
 
@@ -18,7 +19,8 @@ public:
 	void initialize(VkExtent2D swapChainExtent, VkFormat swapChainImageFormat,
 		ShaderManager* shaderManager, const std::string& vertShaderName,
 		const std::string& fragShaderName, Camera* camera, MaterialManager* materialManager,
-		GBuffer* gbuffer, const std::vector<VkImageView>& swapChainImageViews);
+		GBuffer* gbuffer, const std::vector<VkImageView>& swapChainImageViews,
+		DirectionalLight* light);
 
 	Pipeline(const Pipeline&) = delete;
 	Pipeline& operator=(const Pipeline&) = delete;
@@ -47,7 +49,7 @@ public:
 	void createLightingFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createImGuiFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createForwardFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
-	void createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer);
+	void createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light);
 
 private:
 	VkDevice device;

@@ -149,6 +149,7 @@
     <ClCompile Include="dependencies\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\core\application.cpp" />
     <ClCompile Include="src\core\camera.cpp" />
+    <ClCompile Include="src\core\directionallight.cpp" />
     <ClCompile Include="src\core\scene.cpp" />
     <ClCompile Include="src\renderer\gbuffer.cpp" />
     <ClCompile Include="src\renderer\indirectdrawing.cpp" />
@@ -164,7 +165,9 @@
     <ClCompile Include="src\renderer\texturemanager.cpp" />
     <ClCompile Include="src\ui\imguilayer.cpp" />
     <ClCompile Include="src\ui\panels\bottompanel.cpp" />
+    <ClCompile Include="src\ui\panels\directionallightpanel.cpp" />
     <ClCompile Include="src\ui\panels\leftpanel.cpp" />
+    <ClCompile Include="src\ui\panels\rightpanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dependencies\imgui\imconfig.h" />
@@ -180,6 +183,7 @@
     <ClInclude Include="dependencies\vk_mem_alloc.h" />
     <ClInclude Include="src\core\application.hpp" />
     <ClInclude Include="src\core\camera.hpp" />
+    <ClInclude Include="src\core\directionallight.hpp" />
     <ClInclude Include="src\core\scene.hpp" />
     <ClInclude Include="src\renderer\gbuffer.hpp" />
     <ClInclude Include="src\renderer\indirectdrawing.hpp" />
@@ -197,7 +201,9 @@
     <ClInclude Include="src\ui\consolecapture.hpp" />
     <ClInclude Include="src\ui\imguilayer.hpp" />
     <ClInclude Include="src\ui\panels\bottompanel.hpp" />
+    <ClInclude Include="src\ui\panels\directionallightpanel.hpp" />
     <ClInclude Include="src\ui\panels\leftpanel.hpp" />
+    <ClInclude Include="src\ui\panels\rightpanel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
