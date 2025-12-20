@@ -165,6 +165,7 @@
     <ClCompile Include="src\renderer\texturemanager.cpp" />
     <ClCompile Include="src\ui\imguilayer.cpp" />
     <ClCompile Include="src\ui\panels\bottompanel.cpp" />
+    <ClCompile Include="src\ui\panels\camerapanel.cpp" />
     <ClCompile Include="src\ui\panels\directionallightpanel.cpp" />
     <ClCompile Include="src\ui\panels\leftpanel.cpp" />
     <ClCompile Include="src\ui\panels\rightpanel.cpp" />
@@ -201,12 +202,14 @@
     <ClInclude Include="src\ui\consolecapture.hpp" />
     <ClInclude Include="src\ui\imguilayer.hpp" />
     <ClInclude Include="src\ui\panels\bottompanel.hpp" />
+    <ClInclude Include="src\ui\panels\camerapanel.hpp" />
     <ClInclude Include="src\ui\panels\directionallightpanel.hpp" />
     <ClInclude Include="src\ui\panels\leftpanel.hpp" />
     <ClInclude Include="src\ui\panels\rightpanel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
+    <None Include="shaders\forward.frag" />
     <None Include="shaders\frag.spv" />
     <None Include="shaders\geometry.frag" />
     <None Include="shaders\geometry.vert" />

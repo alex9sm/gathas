@@ -15,6 +15,7 @@ public:
         uint32_t width;
         uint32_t height;
         uint32_t mipLevels;
+        bool hasAlpha;
     };
 
 private:
@@ -32,14 +33,14 @@ public:
     ~TextureManager();
 
     void cleanup();
-    const Texture* loadTexture(const std::string& filepath);
+    const Texture* loadTexture(const std::string& filepath, bool srgb = true);
     const Texture* getDefaultTexture() const;
     VkSampler getSampler() const { return textureSampler; }
 
 private:
     void createTextureSampler();
     void createDefaultTexture();
-    Texture createTextureFromFile(const std::string& filepath);
+    Texture createTextureFromFile(const std::string& filepath, bool srgb);
     void generateMipmaps(VkImage image, VkFormat format, uint32_t width, uint32_t height, uint32_t mipLevels);
     uint32_t calculateMipLevels(uint32_t width, uint32_t height);
 };

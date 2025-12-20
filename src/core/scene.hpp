@@ -47,8 +47,22 @@ public:
     const Model* getModel(size_t index) const;
 
     const std::unordered_map<const MaterialManager::Material*, MaterialBatch>& getMaterialBatches() const {
-        return materialBatches;
+        return opaqueBatches;
     }
+
+    const std::unordered_map<const MaterialManager::Material*, MaterialBatch>& getOpaqueBatches() const {
+        return opaqueBatches;
+    }
+
+    const std::unordered_map<const MaterialManager::Material*, MaterialBatch>& getTransparentBatches() const {
+        return transparentBatches;
+    }
+
+    bool hasTransparentObjects() const { return !transparentBatches.empty(); }
+
+    // get transparent batches sorted back-to-front by depth
+    std::vector<std::pair<const MaterialManager::Material*, const MaterialBatch*>>
+        getSortedTransparentBatches(const glm::mat4& viewProj) const;
 
     // bind unified vertex/index buffers to command buffer
     void bindUnifiedBuffers(VkCommandBuffer commandBuffer) const;
@@ -61,7 +75,8 @@ private:
     TextureManager* textureManager;
 
     std::vector<Model> models;
-    std::unordered_map<const MaterialManager::Material*, MaterialBatch> materialBatches;
+    std::unordered_map<const MaterialManager::Material*, MaterialBatch> opaqueBatches;
+    std::unordered_map<const MaterialManager::Material*, MaterialBatch> transparentBatches;
 
     GPUBuffer unifiedVertexBuffer;
     GPUBuffer unifiedIndexBuffer;

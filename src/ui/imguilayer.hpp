@@ -6,11 +6,13 @@
 #include "panels/leftpanel.hpp"
 #include "panels/bottompanel.hpp"
 #include "panels/directionallightpanel.hpp"
+#include "panels/camerapanel.hpp"
 #include "panels/rightpanel.hpp"
 #include <memory>
 
 class Scene;
 class DirectionalLight;
+class Camera;
 
 class ImGuiLayer {
 public:
@@ -22,7 +24,7 @@ public:
 
     void init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice,
         VkDevice device, uint32_t graphicsQueueFamily, VkQueue graphicsQueue,
-        VkRenderPass renderPass, uint32_t imageCount, Scene* scene, DirectionalLight* light);
+        VkRenderPass renderPass, uint32_t imageCount, Scene* scene, DirectionalLight* light, Camera* camera);
 
     void cleanup();
 
@@ -42,5 +44,6 @@ private:
     std::unique_ptr<LeftPanel> leftPanel;
     std::unique_ptr<BottomPanel> bottomPanel;
     std::unique_ptr<DirectionalLightPanel> directionalLightPanel;
+    std::unique_ptr<CameraPanel> cameraPanel;
     std::unique_ptr<RightPanel> rightPanel;
 };

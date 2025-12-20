@@ -79,7 +79,7 @@ void TextureManager::createTextureSampler() {
         throw std::runtime_error("Failed to create texture sampler!");
     }
 
-    std::cout << "Created texture sampler with anisotropy: " << properties.limits.maxSamplerAnisotropy << std::endl;
+    std::cout << "texture sampler created" << std::endl;
 }
 
 void TextureManager::createDefaultTexture() {
@@ -112,6 +112,7 @@ void TextureManager::createDefaultTexture() {
     vmaUnmapMemory(allocator, stagingAllocation);
 
     defaultTexture.mipLevels = 1;
+    defaultTexture.hasAlpha = false;
 
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -226,15 +227,17 @@ const TextureManager::Texture* TextureManager::getDefaultTexture() const {
     return &defaultTexture;
 }
 
-const TextureManager::Texture* TextureManager::loadTexture(const std::string& filepath) {
-    auto it = textureCache.find(filepath);
+const TextureManager::Texture* TextureManager::loadTexture(const std::string& filepath, bool srgb) {
+    // Include format in cache key so same file can be loaded as both sRGB and linear
+    std::string cacheKey = filepath + (srgb ? ":srgb" : ":linear");
+    auto it = textureCache.find(cacheKey);
     if (it != textureCache.end()) {
         return &it->second;
     }
     try {
-        Texture texture = createTextureFromFile(filepath);
-        textureCache[filepath] = texture;
-        return &textureCache[filepath];
+        Texture texture = createTextureFromFile(filepath, srgb);
+        textureCache[cacheKey] = texture;
+        return &textureCache[cacheKey];
     }
     catch (const std::exception& e) {
         std::cerr << "Failed to load texture '" << filepath << "': " << e.what() << std::endl;
@@ -333,7 +336,7 @@ void TextureManager::generateMipmaps(VkImage image, VkFormat format, uint32_t wi
     commandBuffer->endSingleTimeCommands(cmdBuffer);
 }
 
-TextureManager::Texture TextureManager::createTextureFromFile(const std::string& filepath) {
+TextureManager::Texture TextureManager::createTextureFromFile(const std::string& filepath, bool srgb) {
     int width, height, channels;
     stbi_uc* pixels = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
@@ -341,13 +344,36 @@ TextureManager::Texture TextureManager::createTextureFromFile(const std::string&
         throw std::runtime_error("failed to load texture: " + filepath);
     }
 
+    bool hasAlpha = false;
+    if (channels == 4) {
+        // Original image had alpha channel, check if significant pixels are non-opaque
+        // Use threshold of 250 to ignore near-opaque pixels (compression artifacts)
+        // Require at least 0.1% of pixels to be transparent to count as alpha texture
+        size_t pixelCount = static_cast<size_t>(width) * height;
+        size_t transparentPixels = 0;
+        size_t minTransparentPixels = pixelCount / 1000;  // 0.1%
+        if (minTransparentPixels < 1) minTransparentPixels = 1;
+
+        for (size_t i = 0; i < pixelCount; ++i) {
+            if (pixels[i * 4 + 3] < 250) {
+                transparentPixels++;
+                if (transparentPixels >= minTransparentPixels) {
+                    hasAlpha = true;
+                    break;
+                }
+            }
+        }
+    }
+
     VkDeviceSize imageSize = width * height * 4;
-    const VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+    // use sRGB for color textures, linear for data textures (normal maps etc.)
+    const VkFormat format = srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 
     Texture texture{};
     texture.width = static_cast<uint32_t>(width);
     texture.height = static_cast<uint32_t>(height);
     texture.mipLevels = calculateMipLevels(texture.width, texture.height);
+    texture.hasAlpha = hasAlpha;
 
     VkBuffer stagingBuffer;
     VmaAllocation stagingAllocation;

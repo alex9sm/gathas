@@ -126,17 +126,23 @@ void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t i
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
 
-                // push material constants
+                // push constants
                 struct MaterialPushConstants {
                     glm::vec4 diffuseColor;
                     uint32_t hasTexture;
+                    uint32_t hasNormalMap;
+                    float dissolve;
+                    float padding;
                 } pushConstants;
 
                 pushConstants.diffuseColor = material->diffuseColor;
                 pushConstants.hasTexture = material->hasTexture ? 1u : 0u;
+                pushConstants.hasNormalMap = material->hasNormalMap ? 1u : 0u;
+                pushConstants.dissolve = material->dissolve;
+                pushConstants.padding = 0.0f;
 
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
-                    0, 20, &pushConstants);
+                    0, sizeof(MaterialPushConstants), &pushConstants);
             }
 
             // issue single indirect draw for all commands in this batch
@@ -205,7 +211,9 @@ void CommandBuffer::recordLightingPass(VkCommandBuffer commandBuffer, uint32_t i
 
 void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
     VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
-    VkExtent2D extent) {
+    VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+    VkDescriptorSet cameraDescriptorSet, VkDescriptorSet lightDescriptorSet,
+    Scene* scene, const glm::mat4& viewProj) {
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -218,6 +226,75 @@ void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t im
     renderPassInfo.pClearValues = nullptr;
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // only if we have transparent objects
+    if (scene && scene->hasTransparentObjects() && scene->hasUnifiedBuffers()) {
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+        // bind camera descriptor set
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipelineLayout, 0, 1, &cameraDescriptorSet, 0, nullptr);
+
+        // bind light descriptor set
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipelineLayout, 2, 1, &lightDescriptorSet, 0, nullptr);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = static_cast<float>(extent.height);
+        viewport.width = static_cast<float>(extent.width);
+        viewport.height = -static_cast<float>(extent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = extent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        // bind unified vertex/index buffers
+        scene->bindUnifiedBuffers(commandBuffer);
+
+        // get sorted transparent batches
+        auto sortedBatches = scene->getSortedTransparentBatches(viewProj);
+
+        for (const auto& [material, batch] : sortedBatches) {
+            if (material && material->descriptorSet != VK_NULL_HANDLE) {
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
+
+                struct MaterialPushConstants {
+                    glm::vec4 diffuseColor;
+                    uint32_t hasTexture;
+                    uint32_t hasNormalMap;
+                    float dissolve;
+                    float padding;
+                } pushConstants;
+
+                pushConstants.diffuseColor = material->diffuseColor;
+                pushConstants.hasTexture = material->hasTexture ? 1u : 0u;
+                pushConstants.hasNormalMap = material->hasNormalMap ? 1u : 0u;
+                pushConstants.dissolve = material->dissolve;
+                pushConstants.padding = 0.0f;
+
+                vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                    0, sizeof(MaterialPushConstants), &pushConstants);
+
+                // indirect draw for all commands in this batch
+                if (!batch->drawCommands.empty()) {
+                    vkCmdDrawIndexedIndirect(
+                        commandBuffer,
+                        batch->indirectBuffer.getBuffer(),
+                        0,
+                        static_cast<uint32_t>(batch->drawCommands.size()),
+                        sizeof(VkDrawIndexedIndirectCommand)
+                    );
+                }
+            }
+        }
+    }
+
     vkCmdEndRenderPass(commandBuffer);
 }
 
@@ -252,6 +329,8 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
     VkPipeline lightingPipeline, VkPipelineLayout lightingPipelineLayout,
     VkDescriptorSet gbufferDescriptorSet, VkDescriptorSet lightDescriptorSet,
     VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
+    VkPipeline forwardPipeline, VkPipelineLayout forwardPipelineLayout,
+    const glm::mat4& viewProj,
     VkRenderPass imguiRenderPass, const std::vector<VkFramebuffer>& imguiFramebuffers,
     ImGuiLayer* imguiLayer) {
 
@@ -272,7 +351,9 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
         extent, lightingPipeline, lightingPipelineLayout, cameraDescriptorSet,
         gbufferDescriptorSet, lightDescriptorSet);
 
-    recordForwardPass(commandBuffer, imageIndex, forwardRenderPass, forwardFramebuffers, extent);
+    recordForwardPass(commandBuffer, imageIndex, forwardRenderPass, forwardFramebuffers,
+        extent, forwardPipeline, forwardPipelineLayout, cameraDescriptorSet,
+        lightDescriptorSet, scene, viewProj);
 
     recordImGuiPass(commandBuffer, imageIndex, imguiRenderPass, imguiFramebuffers,
         extent, imguiLayer);

@@ -26,8 +26,6 @@ void BottomPanel::scanAssetFolders() {
                 assetFolders.push_back(entry.path().filename().string());
             }
         }
-
-        std::cout << "found " << assetFolders.size() << " asset folders" << std::endl;
     }
     catch (const std::exception& e) {
         std::cerr << "Error scanning asset folders: " << e.what() << std::endl;
@@ -85,20 +83,6 @@ void BottomPanel::render() {
                     std::cerr << "Failed to load model: " << e.what() << std::endl;
                 }
             }
-        }
-
-        // right click menu
-        if (ImGui::BeginPopupContextItem(("context_" + modelName).c_str())) {
-            // only show remove option if the model is loaded
-            if (scene && scene->isModelLoaded(modelName)) {
-                if (ImGui::MenuItem("Remove Asset")) {
-                    scene->removeModel(modelName);
-                }
-            }
-            else {
-                ImGui::TextDisabled("(Not loaded)");
-            }
-            ImGui::EndPopup();
         }
     }
 

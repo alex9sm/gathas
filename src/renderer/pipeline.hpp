@@ -30,6 +30,8 @@ public:
 	VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
 	VkPipeline getLightingPipeline() const { return lightingPipeline; }
 	VkPipelineLayout getLightingPipelineLayout() const { return lightingPipelineLayout; }
+	VkPipeline getForwardPipeline() const { return forwardPipeline; }
+	VkPipelineLayout getForwardPipelineLayout() const { return forwardPipelineLayout; }
 	VkRenderPass getGeometryRenderPass() const { return geometryRenderPass; }
 	VkRenderPass getLightingRenderPass() const { return lightingRenderPass; }
 	VkRenderPass getForwardRenderPass() const { return forwardRenderPass; }
@@ -50,6 +52,7 @@ public:
 	void createImGuiFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createForwardFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light);
+	void createForwardPipeline(ShaderManager* shaderManager, DirectionalLight* light);
 
 private:
 	VkDevice device;
@@ -58,6 +61,8 @@ private:
 	VkPipelineLayout pipelineLayout;
 	VkPipeline lightingPipeline;
 	VkPipelineLayout lightingPipelineLayout;
+	VkPipeline forwardPipeline;
+	VkPipelineLayout forwardPipelineLayout;
 	VkDescriptorSetLayout lightingDescriptorSetLayout;
 	VkRenderPass geometryRenderPass;
 	VkRenderPass lightingRenderPass;

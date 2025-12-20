@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Vulkan/vulkan.h>
+#include <glm/glm.hpp>
 #include <vector>
 
 class Scene;
@@ -28,7 +29,9 @@ public:
 
     void recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
-        VkExtent2D extent);
+        VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+        VkDescriptorSet cameraDescriptorSet, VkDescriptorSet lightDescriptorSet,
+        Scene* scene, const glm::mat4& viewProj);
 
     void recordImGuiPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
@@ -42,6 +45,8 @@ public:
         VkPipeline lightingPipeline, VkPipelineLayout lightingPipelineLayout,
         VkDescriptorSet gbufferDescriptorSet, VkDescriptorSet lightDescriptorSet,
         VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
+        VkPipeline forwardPipeline, VkPipelineLayout forwardPipelineLayout,
+        const glm::mat4& viewProj,
         VkRenderPass imguiRenderPass, const std::vector<VkFramebuffer>& imguiFramebuffers,
         ImGuiLayer* imguiLayer);
 

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <array>
 
 MaterialManager::MaterialManager(VkDevice device, TextureManager* textureManager)
     : device(device)
@@ -32,17 +33,26 @@ void MaterialManager::cleanup() {
 }
 
 void MaterialManager::createDescriptorSetLayout() {
-    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 0;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
+
+    // Binding 0: diffuse texture sampler
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[0].descriptorCount = 1;
+    bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[0].pImmutableSamplers = nullptr;
+
+    // Binding 1: normal map sampler
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &samplerLayoutBinding;
+    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+    layoutInfo.pBindings = bindings.data();
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create descriptor set layout!");
@@ -125,6 +135,18 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
                 currentMaterial.hasTexture = true;
             }
 
+            // if no normal map was specified, use default texture as placeholder
+            if (currentMaterial.normalTexture == nullptr) {
+                currentMaterial.hasNormalMap = false;
+                currentMaterial.normalTexture = textureManager->getDefaultTexture();
+            } else {
+                currentMaterial.hasNormalMap = true;
+            }
+
+            // determine if material has alpha (texture alpha or dissolve < 1.0)
+            currentMaterial.hasAlpha = (currentMaterial.dissolve < 1.0f) ||
+                (currentMaterial.hasTexture && currentMaterial.diffuseTexture->hasAlpha);
+
             materialNameToIndex[currentMaterial.name] = static_cast<uint32_t>(materials.size());
             materials.push_back(currentMaterial);
             hasMaterial = false;
@@ -146,9 +168,13 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             currentMaterial = Material();
             currentMaterial.name = materialName;
             currentMaterial.diffuseTexture = nullptr;
+            currentMaterial.normalTexture = nullptr;
             currentMaterial.descriptorSet = VK_NULL_HANDLE;
-            currentMaterial.diffuseColor = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f); // magenta default
+            currentMaterial.diffuseColor = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f); // daefault magenta
+            currentMaterial.dissolve = 1.0f; // fully opaque by default
             currentMaterial.hasTexture = false;
+            currentMaterial.hasNormalMap = false;
+            currentMaterial.hasAlpha = false;
             hasMaterial = true;
 
         }
@@ -165,8 +191,38 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
 
             currentMaterial.diffuseTexture = textureManager->loadTexture(fullPath);
         }
-        else if (token == "map_Disp" || token == "map_Bump" ||
-                 token == "map_d" || token == "map_Ka") {
+        else if (token == "map_Bump" && hasMaterial) {
+            std::string texturePath;
+            iss >> texturePath;
+
+            // -bm flag if present (bump multiplier, ignore for now)
+            if (texturePath == "-bm") {
+                float bumpMultiplier;
+                iss >> bumpMultiplier >> texturePath;
+            }
+
+            std::string fullPath = textureBasePath + texturePath;
+            currentMaterial.normalTexture = textureManager->loadTexture(fullPath, false);
+        }
+        else if (token == "d" && hasMaterial) {
+            float d;
+            iss >> d;
+            // ignore d=0.0 as it's often an export error
+            // only use dissolve for semi-transparent values (0.01 to 0.99)
+            if (d > 0.01f && d < 1.0f) {
+                currentMaterial.dissolve = d;
+            }
+        }
+        else if (token == "Tr" && hasMaterial) {
+            // transparency 0.0 = opaque, 1.0 = transparent
+            float tr;
+            iss >> tr;
+            float d = 1.0f - tr;
+            if (d > 0.01f && d < 1.0f) {
+                currentMaterial.dissolve = d;
+            }
+        }
+        else if (token == "map_Disp" || token == "map_d" || token == "map_Ka") {
             continue;
         }
     }
@@ -186,9 +242,10 @@ void MaterialManager::createDescriptorPool() {
         return;
     }
 
+    // 2 samplers per material: diffuse + normal map
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize.descriptorCount = static_cast<uint32_t>(materials.size());
+    poolSize.descriptorCount = static_cast<uint32_t>(materials.size()) * 2;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -225,21 +282,37 @@ void MaterialManager::createDescriptorSets() {
     for (size_t i = 0; i < materials.size(); ++i) {
         materials[i].descriptorSet = descriptorSets[i];
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = materials[i].diffuseTexture->imageView;
-        imageInfo.sampler = textureManager->getSampler();
+        // diffuse texture (binding 0)
+        VkDescriptorImageInfo diffuseImageInfo{};
+        diffuseImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        diffuseImageInfo.imageView = materials[i].diffuseTexture->imageView;
+        diffuseImageInfo.sampler = textureManager->getSampler();
 
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = materials[i].descriptorSet;
-        descriptorWrite.dstBinding = 0;
-        descriptorWrite.dstArrayElement = 0;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
+        // normal map (binding 1)
+        VkDescriptorImageInfo normalImageInfo{};
+        normalImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        normalImageInfo.imageView = materials[i].normalTexture->imageView;
+        normalImageInfo.sampler = textureManager->getSampler();
 
-        vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = materials[i].descriptorSet;
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pImageInfo = &diffuseImageInfo;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = materials[i].descriptorSet;
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &normalImageInfo;
+
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
     std::cout << "Created and updated " << materials.size() << " descriptor sets" << std::endl;

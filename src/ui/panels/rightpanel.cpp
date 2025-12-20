@@ -1,10 +1,11 @@
 #include "rightpanel.hpp"
 #include "directionallightpanel.hpp"
+#include "camerapanel.hpp"
 #include "../../core/scene.hpp"
 #include "../../core/directionallight.hpp"
 
-RightPanel::RightPanel(Scene* scene, DirectionalLight* light, DirectionalLightPanel* dirLightPanel)
-    : scene(scene), light(light), dirLightPanel(dirLightPanel), selectedObject("") {
+RightPanel::RightPanel(Scene* scene, DirectionalLight* light, DirectionalLightPanel* dirLightPanel, CameraPanel* cameraPanel)
+    : scene(scene), light(light), dirLightPanel(dirLightPanel), cameraPanel(cameraPanel), selectedObject("") {
 }
 
 RightPanel::~RightPanel() {
@@ -31,18 +32,16 @@ void RightPanel::render() {
     ImGui::Text("Scene Objects");
     ImGui::Separator();
 
-    // Camera object
     if (ImGui::Selectable("Camera", selectedObject == "Camera")) {
         selectedObject = "Camera";
+        cameraPanel->setOpen(true);
     }
 
-    // Directional Light object
     if (ImGui::Selectable("Directional Light", selectedObject == "Directional Light")) {
         selectedObject = "Directional Light";
         dirLightPanel->setOpen(true);
     }
 
-    // Models from scene
     if (scene) {
         size_t modelCount = scene->getModelCount();
         for (size_t i = 0; i < modelCount; ++i) {
@@ -51,6 +50,14 @@ void RightPanel::render() {
                 std::string label = model->name;
                 if (ImGui::Selectable(label.c_str(), selectedObject == label)) {
                     selectedObject = label;
+                }
+
+                // right click context menu for models
+                if (ImGui::BeginPopupContextItem(("scene_context_" + label).c_str())) {
+                    if (ImGui::MenuItem("Remove Asset")) {
+                        scene->removeModel(label);
+                    }
+                    ImGui::EndPopup();
                 }
             }
         }

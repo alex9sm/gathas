@@ -1,6 +1,7 @@
 #include "imguilayer.hpp"
 #include "../core/scene.hpp"
 #include "../core/directionallight.hpp"
+#include "../core/camera.hpp"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_vulkan.h"
 #include <stdexcept>
@@ -15,7 +16,7 @@ ImGuiLayer::~ImGuiLayer() {
 
 void ImGuiLayer::init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice,
     VkDevice device, uint32_t graphicsQueueFamily, VkQueue graphicsQueue,
-    VkRenderPass renderPass, uint32_t imageCount, Scene* scene, DirectionalLight* light) {
+    VkRenderPass renderPass, uint32_t imageCount, Scene* scene, DirectionalLight* light, Camera* camera) {
     this->device = device;
 
     createDescriptorPool(imageCount);
@@ -48,7 +49,8 @@ void ImGuiLayer::init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice 
     leftPanel = std::make_unique<LeftPanel>();
     bottomPanel = std::make_unique<BottomPanel>(scene, "D:/codingfolder/Gathas/assets");
     directionalLightPanel = std::make_unique<DirectionalLightPanel>(light);
-    rightPanel = std::make_unique<RightPanel>(scene, light, directionalLightPanel.get());
+    cameraPanel = std::make_unique<CameraPanel>(camera);
+    rightPanel = std::make_unique<RightPanel>(scene, light, directionalLightPanel.get(), cameraPanel.get());
 
     std::cout << "imgui layer initialized" << std::endl;
 }
@@ -57,6 +59,7 @@ void ImGuiLayer::cleanup() {
     leftPanel.reset();
     bottomPanel.reset();
     directionalLightPanel.reset();
+    cameraPanel.reset();
     rightPanel.reset();
 
     ImGui_ImplVulkan_Shutdown();
@@ -111,6 +114,9 @@ void ImGuiLayer::endFrame(float deltaTime) {
     }
     if (directionalLightPanel) {
         directionalLightPanel->render();
+    }
+    if (cameraPanel) {
+        cameraPanel->render();
     }
     if (rightPanel) {
         rightPanel->render();

@@ -12,9 +12,13 @@ public:
     struct Material {
         std::string name;
         const TextureManager::Texture* diffuseTexture;
+        const TextureManager::Texture* normalTexture;
         VkDescriptorSet descriptorSet;
         glm::vec4 diffuseColor;
+        float dissolve;         // MTL 'd' value (1.0 = opaque, 0.0 = fully transparent)
         bool hasTexture;
+        bool hasNormalMap;
+        bool hasAlpha;          // true if texture has alpha or dissolve < 1.0
     };
 
     MaterialManager(VkDevice device, TextureManager* textureManager);

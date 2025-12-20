@@ -34,6 +34,9 @@ public:
     void setRotation(float yaw, float pitch) { this->yaw = yaw; this->pitch = pitch; }
     glm::vec3 getPosition() const { return position; }
 
+    float* getSpeedPtr() { return &movementSpeed; }
+    glm::mat4 getViewProjectionMatrix() const;
+
     static const int MAX_FRAMES_IN_FLIGHT = 2;
 
     void setupInputCallbacks(GLFWwindow* window);

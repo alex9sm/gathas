@@ -6,10 +6,11 @@
 class Scene;
 class DirectionalLight;
 class DirectionalLightPanel;
+class CameraPanel;
 
 class RightPanel {
 public:
-    RightPanel(Scene* scene, DirectionalLight* light, DirectionalLightPanel* dirLightPanel);
+    RightPanel(Scene* scene, DirectionalLight* light, DirectionalLightPanel* dirLightPanel, CameraPanel* cameraPanel);
     ~RightPanel();
 
     RightPanel(const RightPanel&) = delete;
@@ -21,6 +22,7 @@ private:
     Scene* scene;
     DirectionalLight* light;
     DirectionalLightPanel* dirLightPanel;
+    CameraPanel* cameraPanel;
 
     std::string selectedObject;
 };

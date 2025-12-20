@@ -150,6 +150,10 @@ glm::mat4 Camera::getProjectionMatrix() const {
     return glm::perspective(glm::radians(fov), aspect, 0.1f, 10000.0f);
 }
 
+glm::mat4 Camera::getViewProjectionMatrix() const {
+    return getProjectionMatrix() * getViewMatrix();
+}
+
 void Camera::setupInputCallbacks(GLFWwindow* win) {
     window = win;
     glfwSetMouseButtonCallback(window, mouseButtonCallback);

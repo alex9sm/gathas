@@ -258,7 +258,7 @@ void Application::createImGuiLayer() {
         indices.graphicsFamily.value(), graphicsQueue,
         pipeline->getImGuiRenderPass(),
         static_cast<uint32_t>(swapChain->getImageCount()),
-        scene.get(), directionalLight.get());
+        scene.get(), directionalLight.get(), camera.get());
 }
 
 void Application::createScene() {
@@ -301,6 +301,8 @@ void Application::drawFrame() {
     imguiLayer->beginFrame();
     imguiLayer->endFrame(deltaTime);
 
+    glm::mat4 viewProj = camera->getViewProjectionMatrix();
+
     commandBuffer->recordFrame(cmdBuffer, imageIndex, swapChain->getExtent(),
         pipeline->getGeometryRenderPass(),
         pipeline->getGeometryFramebuffers(),
@@ -313,6 +315,8 @@ void Application::drawFrame() {
         directionalLight->getDescriptorSet(currentFrame),
         pipeline->getForwardRenderPass(),
         pipeline->getForwardFramebuffers(),
+        pipeline->getForwardPipeline(), pipeline->getForwardPipelineLayout(),
+        viewProj,
         pipeline->getImGuiRenderPass(),
         pipeline->getImGuiFramebuffers(),
         imguiLayer.get());

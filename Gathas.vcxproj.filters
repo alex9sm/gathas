@@ -96,6 +96,9 @@
     <ClCompile Include="src\ui\panels\rightpanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\panels\camerapanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\window.hpp">
@@ -200,6 +203,9 @@
     <ClInclude Include="src\ui\panels\rightpanel.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\panels\camerapanel.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -218,5 +224,6 @@
     <None Include="shaders\geometry_vert.spv" />
     <None Include="shaders\lighting_frag.spv" />
     <None Include="shaders\lighting_vert.spv" />
+    <None Include="shaders\forward.frag" />
   </ItemGroup>
 </Project>

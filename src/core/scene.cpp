@@ -1,6 +1,7 @@
 #include "scene.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 
 Scene::Scene(VmaAllocator allocator, CommandBuffer* commandBuffer,
              MaterialManager* materialManager, TextureManager* textureManager)
@@ -51,7 +52,7 @@ void Scene::loadModel(const std::string& assetFolderPath, const std::string& mod
 
 void Scene::drawAll(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout,
                     MaterialManager* materialManager) const {
-    for (const auto& [material, batch] : materialBatches) {
+    for (const auto& [material, batch] : opaqueBatches) {
         if (material && material->descriptorSet != VK_NULL_HANDLE) {
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pipelineLayout, 1, 1, &material->descriptorSet, 0, nullptr);
@@ -60,13 +61,19 @@ void Scene::drawAll(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayo
             struct MaterialPushConstants {
                 glm::vec4 diffuseColor;
                 uint32_t hasTexture;
+                uint32_t hasNormalMap;
+                float dissolve;
+                float padding;
             } pushConstants;
 
             pushConstants.diffuseColor = material->diffuseColor;
             pushConstants.hasTexture = material->hasTexture ? 1u : 0u;
+            pushConstants.hasNormalMap = material->hasNormalMap ? 1u : 0u;
+            pushConstants.dissolve = material->dissolve;
+            pushConstants.padding = 0.0f;
 
             vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
-                0, 20, &pushConstants); // vec4 (16) + uint (4) = 20 bytes
+                0, sizeof(MaterialPushConstants), &pushConstants);
         }
 
         for (const auto& cmd : batch.drawCommands) {
@@ -79,10 +86,15 @@ void Scene::drawAll(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayo
 }
 
 void Scene::clear() {
-    for (auto& [material, batch] : materialBatches) {
+    for (auto& [material, batch] : opaqueBatches) {
         batch.cleanup(allocator);
     }
-    materialBatches.clear();
+    opaqueBatches.clear();
+
+    for (auto& [material, batch] : transparentBatches) {
+        batch.cleanup(allocator);
+    }
+    transparentBatches.clear();
 
     unifiedVertexBuffer.destroy(allocator);
     unifiedIndexBuffer.destroy(allocator);
@@ -130,10 +142,16 @@ const Scene::Model* Scene::getModel(size_t index) const {
 }
 
 void Scene::buildMaterialBatches() {
-    for (auto& [material, batch] : materialBatches) {
+    for (auto& [material, batch] : opaqueBatches) {
         batch.cleanup(allocator);
     }
-    materialBatches.clear();
+    opaqueBatches.clear();
+
+    for (auto& [material, batch] : transparentBatches) {
+        batch.cleanup(allocator);
+    }
+    transparentBatches.clear();
+
     unifiedVertexBuffer.destroy(allocator);
     unifiedIndexBuffer.destroy(allocator);
 
@@ -175,11 +193,15 @@ void Scene::buildMaterialBatches() {
             const std::string& materialName = model.mesh->getMaterialName(i);
             const MaterialManager::Material* material = materialManager->getMaterialByName(materialName);
 
-            auto it = materialBatches.find(material);
-            if (it == materialBatches.end()) {
+            // separate into opaque or transparent batches based on material alpha
+            bool isTransparent = material && material->hasAlpha;
+            auto& targetBatches = isTransparent ? transparentBatches : opaqueBatches;
+
+            auto it = targetBatches.find(material);
+            if (it == targetBatches.end()) {
                 MaterialBatch newBatch;
                 newBatch.material = material;
-                auto [insertIt, success] = materialBatches.emplace(material, std::move(newBatch));
+                auto [insertIt, success] = targetBatches.emplace(material, std::move(newBatch));
                 it = insertIt;
             }
 
@@ -188,11 +210,16 @@ void Scene::buildMaterialBatches() {
         }
     }
 
-    for (auto& [material, batch] : materialBatches) {
+    for (auto& [material, batch] : opaqueBatches) {
         batch.buildIndirectBuffer(allocator);
     }
 
-    std::cout << "Built " << materialBatches.size() << " material batches with unified buffers ("
+    for (auto& [material, batch] : transparentBatches) {
+        batch.buildIndirectBuffer(allocator);
+    }
+
+    std::cout << "Built " << opaqueBatches.size() << " opaque batches and "
+              << transparentBatches.size() << " transparent batches with unified buffers ("
               << totalVertices << " vertices, " << totalIndices << " indices)" << std::endl;
 }
 
@@ -239,4 +266,63 @@ void Scene::bindUnifiedBuffers(VkCommandBuffer cmd) const {
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(cmd, unifiedIndexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+}
+
+std::vector<std::pair<const MaterialManager::Material*, const MaterialBatch*>>
+Scene::getSortedTransparentBatches(const glm::mat4& viewProj) const {
+    std::vector<std::pair<const MaterialManager::Material*, const MaterialBatch*>> sortedBatches;
+
+    for (const auto& [material, batch] : transparentBatches) {
+        sortedBatches.emplace_back(material, &batch);
+    }
+
+    // Sort back-to-front (greater depth first) using clip space Z
+    std::sort(sortedBatches.begin(), sortedBatches.end(),
+        [this, &viewProj](const auto& a, const auto& b) {
+            // Compute average depth for each batch using first draw command's mesh center
+            auto computeBatchDepth = [this, &viewProj](const MaterialBatch* batch) -> float {
+                if (batch->drawCommands.empty()) return 0.0f;
+
+                const auto& cmd = batch->drawCommands[0];
+                if (!cmd.mesh) return 0.0f;
+
+                // Compute center of the submesh
+                const auto& verts = cmd.mesh->getVertices();
+                const auto& submesh = cmd.mesh->getSubmesh(cmd.submeshIndex);
+
+                if (verts.empty()) return 0.0f;
+
+                // Sample some vertices to compute approximate center
+                glm::vec3 center(0.0f);
+                uint32_t sampleCount = 0;
+                uint32_t step = std::max(1u, submesh.indexCount / 10); // sample ~10 vertices
+
+                const auto& indices = cmd.mesh->getIndices();
+                for (uint32_t i = submesh.indexOffset; i < submesh.indexOffset + submesh.indexCount; i += step) {
+                    if (i < indices.size()) {
+                        uint32_t idx = indices[i];
+                        if (idx < verts.size()) {
+                            center += verts[idx].pos;
+                            sampleCount++;
+                        }
+                    }
+                }
+
+                if (sampleCount > 0) {
+                    center /= static_cast<float>(sampleCount);
+                }
+
+                // Transform to clip space and return Z depth
+                glm::vec4 clipPos = viewProj * glm::vec4(center, 1.0f);
+                return clipPos.z / clipPos.w;
+            };
+
+            float depthA = computeBatchDepth(a.second);
+            float depthB = computeBatchDepth(b.second);
+
+            // Sort back-to-front (larger depth = farther = render first)
+            return depthA > depthB;
+        });
+
+    return sortedBatches;
 }
