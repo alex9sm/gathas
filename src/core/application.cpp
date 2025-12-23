@@ -52,6 +52,7 @@ void Application::initVulkan() {
     createMaterialManager();
     createGBuffer();
     createDirectionalLight();
+    createPointLight();
     createPipeline();
     createScene();
     createImGuiLayer();
@@ -238,12 +239,16 @@ void Application::createDirectionalLight() {
     directionalLight = std::make_unique<DirectionalLight>(device, allocator);
 }
 
+void Application::createPointLight() {
+    pointLight = std::make_unique<PointLight>(device, allocator);
+}
+
 void Application::createPipeline() {
     pipeline = std::make_unique<Pipeline>(device, physicalDevice);
     pipeline->initialize(swapChain->getExtent(), swapChain->getImageFormat(),
         shaderManager.get(), "geometry_vert.spv", "geometry_frag.spv",
         camera.get(), materialManager.get(), gbuffer.get(), swapChain->getImageViews(),
-        directionalLight.get());
+        directionalLight.get(), pointLight.get());
 }
 
 void Application::createCommandBuffer() {
@@ -258,7 +263,7 @@ void Application::createImGuiLayer() {
         indices.graphicsFamily.value(), graphicsQueue,
         pipeline->getImGuiRenderPass(),
         static_cast<uint32_t>(swapChain->getImageCount()),
-        scene.get(), directionalLight.get(), camera.get());
+        scene.get(), directionalLight.get(), pointLight.get(), camera.get());
 }
 
 void Application::createScene() {
@@ -288,8 +293,9 @@ void Application::drawFrame() {
     // update camera uniform buffer
     camera->updateUniformBuffer(allocator, currentFrame);
 
-    // update light uniform buffer
+    // update light uniform buffers
     directionalLight->updateUniformBuffer(allocator, currentFrame, camera->getPosition());
+    pointLight->updateUniformBuffer(allocator, currentFrame);
 
     VkCommandBuffer cmdBuffer = commandBuffer->getCommandBuffer(currentFrame);
     vkResetCommandBuffer(cmdBuffer, 0);
@@ -313,6 +319,7 @@ void Application::drawFrame() {
         pipeline->getLightingPipeline(), pipeline->getLightingPipelineLayout(),
         gbuffer->getDescriptorSet(currentFrame),
         directionalLight->getDescriptorSet(currentFrame),
+        pointLight->getDescriptorSet(currentFrame),
         pipeline->getForwardRenderPass(),
         pipeline->getForwardFramebuffers(),
         pipeline->getForwardPipeline(), pipeline->getForwardPipelineLayout(),
@@ -385,6 +392,11 @@ void Application::cleanup() {
 
     commandBuffer.reset();
     pipeline.reset();
+
+    if (pointLight) {
+        pointLight->cleanup(allocator);
+    }
+    pointLight.reset();
 
     if (directionalLight) {
         directionalLight->cleanup(allocator);

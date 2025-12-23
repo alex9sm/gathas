@@ -43,15 +43,6 @@ void DirectionalLightPanel::render() {
     ImGui::SliderFloat("##Intensity", light->getIntensityPtr(), 0.0f, 5.0f);
 
     ImGui::Separator();
-    ImGui::Text("Ambient");
-
-    ImGui::Text("Ambient Color");
-    ImGui::ColorEdit3("##AmbientColor", light->getAmbientColorPtr(), ImGuiColorEditFlags_NoLabel);
-
-    ImGui::Text("Ambient Intensity");
-    ImGui::SliderFloat("##AmbientIntensity", light->getAmbientIntensityPtr(), 0.0f, 1.0f);
-
-    ImGui::Separator();
     ImGui::Text("Specular");
 
     ImGui::Text("Specular Power");

@@ -5,52 +5,39 @@
 #include "../renderer/gpubuffer.hpp"
 #include "vk_mem_alloc.h"
 
-struct LightingUBO {
-    alignas(16) glm::vec3 direction;
+struct PointLightUBO {
+    alignas(16) glm::vec3 position;
     alignas(4) float intensity;
     alignas(16) glm::vec3 color;
-    alignas(4) float ambientIntensity;
-    alignas(16) glm::vec3 ambientColor;
-    alignas(4) float specularPower;
-    alignas(16) glm::vec3 cameraPosition;
     alignas(4) float padding;
 };
 
-class DirectionalLight {
+class PointLight {
 public:
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-    DirectionalLight(VkDevice device, VmaAllocator allocator);
-    ~DirectionalLight();
+    PointLight(VkDevice device, VmaAllocator allocator);
+    ~PointLight();
 
-    DirectionalLight(const DirectionalLight&) = delete;
-    DirectionalLight& operator=(const DirectionalLight&) = delete;
+    PointLight(const PointLight&) = delete;
+    PointLight& operator=(const PointLight&) = delete;
 
     void cleanup(VmaAllocator allocator);
-    void updateUniformBuffer(VmaAllocator allocator, uint32_t currentFrame, const glm::vec3& cameraPos);
+    void updateUniformBuffer(VmaAllocator allocator, uint32_t currentFrame);
 
-    void setDirection(const glm::vec3& dir) { direction = glm::normalize(dir); }
+    void setPosition(const glm::vec3& pos) { position = pos; }
     void setColor(const glm::vec3& col) { color = col; }
     void setIntensity(float i) { intensity = i; }
-    void setAmbientColor(const glm::vec3& col) { ambientColor = col; }
-    void setAmbientIntensity(float i) { ambientIntensity = i; }
-    void setSpecularPower(float p) { specularPower = p; }
     void setEnabled(bool e) { enabled = e; }
 
-    glm::vec3 getDirection() const { return direction; }
+    glm::vec3 getPosition() const { return position; }
     glm::vec3 getColor() const { return color; }
     float getIntensity() const { return intensity; }
-    glm::vec3 getAmbientColor() const { return ambientColor; }
-    float getAmbientIntensity() const { return ambientIntensity; }
-    float getSpecularPower() const { return specularPower; }
     bool isEnabled() const { return enabled; }
 
-    float* getDirectionPtr() { return &direction.x; }
+    float* getPositionPtr() { return &position.x; }
     float* getColorPtr() { return &color.x; }
     float* getIntensityPtr() { return &intensity; }
-    float* getAmbientColorPtr() { return &ambientColor.x; }
-    float* getAmbientIntensityPtr() { return &ambientIntensity; }
-    float* getSpecularPowerPtr() { return &specularPower; }
 
     VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
     VkDescriptorSet getDescriptorSet(uint32_t frame) const { return descriptorSets[frame]; }
@@ -59,12 +46,9 @@ public:
 private:
     VkDevice device;
 
-    glm::vec3 direction;
+    glm::vec3 position;
     glm::vec3 color;
     float intensity;
-    glm::vec3 ambientColor;
-    float ambientIntensity;
-    float specularPower;
     bool enabled;
 
     GPUBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT];

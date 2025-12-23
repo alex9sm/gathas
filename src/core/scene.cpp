@@ -276,26 +276,23 @@ Scene::getSortedTransparentBatches(const glm::mat4& viewProj) const {
         sortedBatches.emplace_back(material, &batch);
     }
 
-    // Sort back-to-front (greater depth first) using clip space Z
     std::sort(sortedBatches.begin(), sortedBatches.end(),
         [this, &viewProj](const auto& a, const auto& b) {
-            // Compute average depth for each batch using first draw command's mesh center
             auto computeBatchDepth = [this, &viewProj](const MaterialBatch* batch) -> float {
                 if (batch->drawCommands.empty()) return 0.0f;
 
                 const auto& cmd = batch->drawCommands[0];
                 if (!cmd.mesh) return 0.0f;
 
-                // Compute center of the submesh
+                // center of the submesh
                 const auto& verts = cmd.mesh->getVertices();
                 const auto& submesh = cmd.mesh->getSubmesh(cmd.submeshIndex);
 
                 if (verts.empty()) return 0.0f;
 
-                // Sample some vertices to compute approximate center
                 glm::vec3 center(0.0f);
                 uint32_t sampleCount = 0;
-                uint32_t step = std::max(1u, submesh.indexCount / 10); // sample ~10 vertices
+                uint32_t step = std::max(1u, submesh.indexCount / 10);
 
                 const auto& indices = cmd.mesh->getIndices();
                 for (uint32_t i = submesh.indexOffset; i < submesh.indexOffset + submesh.indexCount; i += step) {
@@ -312,7 +309,6 @@ Scene::getSortedTransparentBatches(const glm::mat4& viewProj) const {
                     center /= static_cast<float>(sampleCount);
                 }
 
-                // Transform to clip space and return Z depth
                 glm::vec4 clipPos = viewProj * glm::vec4(center, 1.0f);
                 return clipPos.z / clipPos.w;
             };
@@ -320,7 +316,6 @@ Scene::getSortedTransparentBatches(const glm::mat4& viewProj) const {
             float depthA = computeBatchDepth(a.second);
             float depthB = computeBatchDepth(b.second);
 
-            // Sort back-to-front (larger depth = farther = render first)
             return depthA > depthB;
         });
 

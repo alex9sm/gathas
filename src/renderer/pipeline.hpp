@@ -9,6 +9,7 @@ class Camera;
 class MaterialManager;
 class GBuffer;
 class DirectionalLight;
+class PointLight;
 
 class Pipeline {
 
@@ -20,7 +21,7 @@ public:
 		ShaderManager* shaderManager, const std::string& vertShaderName,
 		const std::string& fragShaderName, Camera* camera, MaterialManager* materialManager,
 		GBuffer* gbuffer, const std::vector<VkImageView>& swapChainImageViews,
-		DirectionalLight* light);
+		DirectionalLight* light, PointLight* pointLight);
 
 	Pipeline(const Pipeline&) = delete;
 	Pipeline& operator=(const Pipeline&) = delete;
@@ -51,7 +52,7 @@ public:
 	void createLightingFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createImGuiFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createForwardFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
-	void createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light);
+	void createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light, PointLight* pointLight);
 	void createForwardPipeline(ShaderManager* shaderManager, DirectionalLight* light);
 
 private:

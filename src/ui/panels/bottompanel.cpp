@@ -1,11 +1,13 @@
 #include "bottompanel.hpp"
+#include "../../core/directionallight.hpp"
+#include "../../core/pointlight.hpp"
 #include <filesystem>
 #include <iostream>
 
 namespace fs = std::filesystem;
 
-BottomPanel::BottomPanel(Scene* scene, const std::string& assetsPath)
-    : scene(scene), assetsPath(assetsPath) {
+BottomPanel::BottomPanel(Scene* scene, const std::string& assetsPath, DirectionalLight* dirLight, PointLight* pointLight)
+    : scene(scene), assetsPath(assetsPath), dirLight(dirLight), pointLight(pointLight) {
     scanAssetFolders();
 }
 
@@ -33,11 +35,11 @@ void BottomPanel::scanAssetFolders() {
 }
 
 void BottomPanel::render() {
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));      // panel background
-    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));          // title bar
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));    // active title bar
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));           // border color
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));             // text color
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse;
 
@@ -55,24 +57,29 @@ void BottomPanel::render() {
         if (scene) {
             scene->clear();
         }
+        if (dirLight) {
+            dirLight->setEnabled(false);
+        }
+        if (pointLight) {
+            pointLight->setEnabled(false);
+        }
     }
 
     ImGui::Separator();
 
-    ImGui::Text("Models: %zu", scene ? scene->getModelCount() : 0);
+    float availableHeight = ImGui::GetContentRegionAvail().y;
+    float halfHeight = (availableHeight - ImGui::GetTextLineHeightWithSpacing() * 2 - 20) / 2;
 
-    ImGui::Separator();
-
-    ImGui::BeginChild("AssetList", ImVec2(0, 0), true);
+    ImGui::Text("Models");
+    ImGui::BeginChild("ModelsList", ImVec2(0, halfHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
 
     for (size_t i = 0; i < assetFolders.size(); ++i) {
-        bool isSelected = (selectedIndex == static_cast<int>(i));
+        bool isSelected = (selectedModelIndex == static_cast<int>(i));
         const std::string& modelName = assetFolders[i];
 
         if (ImGui::Selectable(modelName.c_str(), isSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
-            selectedIndex = static_cast<int>(i);
+            selectedModelIndex = static_cast<int>(i);
 
-            // handle double click to load
             if (ImGui::IsMouseDoubleClicked(0) && scene) {
                 std::string folderPath = assetsPath + "/" + modelName;
 
@@ -83,6 +90,31 @@ void BottomPanel::render() {
                     std::cerr << "Failed to load model: " << e.what() << std::endl;
                 }
             }
+        }
+    }
+
+    ImGui::EndChild();
+
+    ImGui::Separator();
+
+    ImGui::Text("Actors");
+    ImGui::BeginChild("ActorsList", ImVec2(0, halfHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+    bool dirLightSelected = (selectedActorIndex == 0);
+    if (ImGui::Selectable("Directional Light", dirLightSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
+        selectedActorIndex = 0;
+
+        if (ImGui::IsMouseDoubleClicked(0) && dirLight) {
+            dirLight->setEnabled(true);
+        }
+    }
+
+    bool pointLightSelected = (selectedActorIndex == 1);
+    if (ImGui::Selectable("Point Light", pointLightSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
+        selectedActorIndex = 1;
+
+        if (ImGui::IsMouseDoubleClicked(0) && pointLight) {
+            pointLight->setEnabled(true);
         }
     }
 

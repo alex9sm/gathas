@@ -1,15 +1,12 @@
-#include "directionallight.hpp"
+#include "pointlight.hpp"
 #include <stdexcept>
 #include <iostream>
 
-DirectionalLight::DirectionalLight(VkDevice device, VmaAllocator allocator)
+PointLight::PointLight(VkDevice device, VmaAllocator allocator)
     : device(device)
-    , direction(glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f)))
+    , position(0.0f, 0.0f, 0.0f)
     , color(1.0f, 1.0f, 1.0f)
-    , intensity(1.0f)
-    , ambientColor(1.0f, 1.0f, 1.0f)
-    , ambientIntensity(0.1f)
-    , specularPower(32.0f)
+    , intensity(10000.0f)
     , enabled(false)
     , descriptorSetLayout(VK_NULL_HANDLE)
     , descriptorPool(VK_NULL_HANDLE)
@@ -18,14 +15,12 @@ DirectionalLight::DirectionalLight(VkDevice device, VmaAllocator allocator)
     createDescriptorSetLayout();
     createDescriptorPool();
     createDescriptorSets();
-
-    std::cout << "directional light created" << std::endl;
 }
 
-DirectionalLight::~DirectionalLight() {
+PointLight::~PointLight() {
 }
 
-void DirectionalLight::cleanup(VmaAllocator allocator) {
+void PointLight::cleanup(VmaAllocator allocator) {
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         uniformBuffers[i].destroy(allocator);
     }
@@ -41,8 +36,8 @@ void DirectionalLight::cleanup(VmaAllocator allocator) {
     }
 }
 
-void DirectionalLight::createUniformBuffers(VmaAllocator allocator) {
-    VkDeviceSize bufferSize = sizeof(LightingUBO);
+void PointLight::createUniformBuffers(VmaAllocator allocator) {
+    VkDeviceSize bufferSize = sizeof(PointLightUBO);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         uniformBuffers[i].create(
@@ -56,7 +51,7 @@ void DirectionalLight::createUniformBuffers(VmaAllocator allocator) {
     }
 }
 
-void DirectionalLight::createDescriptorSetLayout() {
+void PointLight::createDescriptorSetLayout() {
     VkDescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -70,11 +65,11 @@ void DirectionalLight::createDescriptorSetLayout() {
     layoutInfo.pBindings = &uboLayoutBinding;
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create light descriptor set layout");
+        throw std::runtime_error("failed to create point light descriptor set layout");
     }
 }
 
-void DirectionalLight::createDescriptorPool() {
+void PointLight::createDescriptorPool() {
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
@@ -86,11 +81,11 @@ void DirectionalLight::createDescriptorPool() {
     poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create light descriptor pool");
+        throw std::runtime_error("failed to create point light descriptor pool");
     }
 }
 
-void DirectionalLight::createDescriptorSets() {
+void PointLight::createDescriptorSets() {
     std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -101,14 +96,14 @@ void DirectionalLight::createDescriptorSets() {
 
     descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
     if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate light descriptor sets");
+        throw std::runtime_error("failed to allocate point light descriptor sets");
     }
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = uniformBuffers[i].getBuffer();
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(LightingUBO);
+        bufferInfo.range = sizeof(PointLightUBO);
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -123,15 +118,11 @@ void DirectionalLight::createDescriptorSets() {
     }
 }
 
-void DirectionalLight::updateUniformBuffer(VmaAllocator allocator, uint32_t currentFrame, const glm::vec3& cameraPos) {
-    LightingUBO ubo{};
-    ubo.direction = direction;
+void PointLight::updateUniformBuffer(VmaAllocator allocator, uint32_t currentFrame) {
+    PointLightUBO ubo{};
+    ubo.position = position;
     ubo.intensity = enabled ? intensity : 0.0f;
     ubo.color = color;
-    ubo.ambientIntensity = ambientIntensity;
-    ubo.ambientColor = ambientColor;
-    ubo.specularPower = specularPower;
-    ubo.cameraPosition = cameraPos;
     ubo.padding = 0.0f;
 
     void* data;

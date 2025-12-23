@@ -88,10 +88,11 @@ void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t i
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = extent;
 
-    std::array<VkClearValue, 3> clearValues{};
-    clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-    clearValues[1].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-    clearValues[2].depthStencil = { 1.0f, 0 };
+    std::array<VkClearValue, 4> clearValues{};
+    clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };  // albedo
+    clearValues[1].color = { {0.0f, 0.0f, 0.0f, 1.0f} };  // normal
+    clearValues[2].color = { {1.0f, 0.0f, 0.0f, 0.0f} };  // roughness (default 1.0)
+    clearValues[3].depthStencil = { 1.0f, 0 };
 
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
@@ -132,14 +133,14 @@ void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t i
                     uint32_t hasTexture;
                     uint32_t hasNormalMap;
                     float dissolve;
-                    float padding;
+                    float roughness;
                 } pushConstants;
 
                 pushConstants.diffuseColor = material->diffuseColor;
                 pushConstants.hasTexture = material->hasTexture ? 1u : 0u;
                 pushConstants.hasNormalMap = material->hasNormalMap ? 1u : 0u;
                 pushConstants.dissolve = material->dissolve;
-                pushConstants.padding = 0.0f;
+                pushConstants.roughness = material->roughness;
 
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
                     0, sizeof(MaterialPushConstants), &pushConstants);
@@ -165,7 +166,7 @@ void CommandBuffer::recordLightingPass(VkCommandBuffer commandBuffer, uint32_t i
     VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
     VkDescriptorSet cameraDescriptorSet, VkDescriptorSet gbufferDescriptorSet,
-    VkDescriptorSet lightDescriptorSet) {
+    VkDescriptorSet lightDescriptorSet, VkDescriptorSet pointLightDescriptorSet) {
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -189,6 +190,8 @@ void CommandBuffer::recordLightingPass(VkCommandBuffer commandBuffer, uint32_t i
         pipelineLayout, 1, 1, &gbufferDescriptorSet, 0, nullptr);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipelineLayout, 2, 1, &lightDescriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipelineLayout, 3, 1, &pointLightDescriptorSet, 0, nullptr);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -269,14 +272,14 @@ void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t im
                     uint32_t hasTexture;
                     uint32_t hasNormalMap;
                     float dissolve;
-                    float padding;
+                    float roughness;
                 } pushConstants;
 
                 pushConstants.diffuseColor = material->diffuseColor;
                 pushConstants.hasTexture = material->hasTexture ? 1u : 0u;
                 pushConstants.hasNormalMap = material->hasNormalMap ? 1u : 0u;
                 pushConstants.dissolve = material->dissolve;
-                pushConstants.padding = 0.0f;
+                pushConstants.roughness = material->roughness;
 
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
                     0, sizeof(MaterialPushConstants), &pushConstants);
@@ -328,6 +331,7 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
     VkRenderPass lightingRenderPass, const std::vector<VkFramebuffer>& lightingFramebuffers,
     VkPipeline lightingPipeline, VkPipelineLayout lightingPipelineLayout,
     VkDescriptorSet gbufferDescriptorSet, VkDescriptorSet lightDescriptorSet,
+    VkDescriptorSet pointLightDescriptorSet,
     VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
     VkPipeline forwardPipeline, VkPipelineLayout forwardPipelineLayout,
     const glm::mat4& viewProj,
@@ -349,7 +353,7 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
 
     recordLightingPass(commandBuffer, imageIndex, lightingRenderPass, lightingFramebuffers,
         extent, lightingPipeline, lightingPipelineLayout, cameraDescriptorSet,
-        gbufferDescriptorSet, lightDescriptorSet);
+        gbufferDescriptorSet, lightDescriptorSet, pointLightDescriptorSet);
 
     recordForwardPass(commandBuffer, imageIndex, forwardRenderPass, forwardFramebuffers,
         extent, forwardPipeline, forwardPipelineLayout, cameraDescriptorSet,

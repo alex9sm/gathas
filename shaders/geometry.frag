@@ -9,7 +9,7 @@ layout(push_constant) uniform MaterialPushConstants {
     uint hasTexture;
     uint hasNormalMap;
     float dissolve;
-    float padding;
+    float roughness;
 } material;
 
 layout(location = 0) in vec3 fragWorldPos;
@@ -19,6 +19,7 @@ layout(location = 3) in vec4 fragTangent;
 
 layout(location = 0) out vec4 outAlbedo;
 layout(location = 1) out vec4 outNormal;
+layout(location = 2) out float outRoughness;
 
 void main() {
     // use constant color if no texture, otherwise sample texture
@@ -43,4 +44,5 @@ void main() {
     }
 
     outNormal = vec4(normal * 0.5 + 0.5, 1.0);
+    outRoughness = material.roughness;
 }

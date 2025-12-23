@@ -7,6 +7,7 @@
 #include "camera.hpp"
 #include "scene.hpp"
 #include "directionallight.hpp"
+#include "pointlight.hpp"
 #include "../renderer/swapchain.hpp"
 #include "../renderer/pipeline.hpp"
 #include "../renderer/commandbuffer.hpp"
@@ -66,6 +67,7 @@ private:
     std::unique_ptr<CommandBuffer> commandBuffer;
     std::unique_ptr<Scene> scene;
     std::unique_ptr<DirectionalLight> directionalLight;
+    std::unique_ptr<PointLight> pointLight;
     std::unique_ptr<ImGuiLayer> imguiLayer;
 
     uint32_t currentFrame = 0;
@@ -89,6 +91,7 @@ private:
     void createCommandBuffer();
     void createScene();
     void createDirectionalLight();
+    void createPointLight();
     void drawFrame();
     void cleanup();
     void recreateSwapChain();

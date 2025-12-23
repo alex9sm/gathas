@@ -11,6 +11,9 @@ GBuffer::GBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VmaAllocator 
     , normalImage(VK_NULL_HANDLE)
     , normalAllocation(VK_NULL_HANDLE)
     , normalImageView(VK_NULL_HANDLE)
+    , roughnessImage(VK_NULL_HANDLE)
+    , roughnessAllocation(VK_NULL_HANDLE)
+    , roughnessImageView(VK_NULL_HANDLE)
     , sampler(VK_NULL_HANDLE)
     , descriptorSetLayout(VK_NULL_HANDLE)
     , descriptorPool(VK_NULL_HANDLE)
@@ -42,6 +45,16 @@ void GBuffer::cleanup() {
         vmaDestroyImage(allocator, normalImage, normalAllocation);
         normalImage = VK_NULL_HANDLE;
         normalAllocation = VK_NULL_HANDLE;
+    }
+
+    if (roughnessImageView != VK_NULL_HANDLE) {
+        vkDestroyImageView(device, roughnessImageView, nullptr);
+        roughnessImageView = VK_NULL_HANDLE;
+    }
+    if (roughnessImage != VK_NULL_HANDLE) {
+        vmaDestroyImage(allocator, roughnessImage, roughnessAllocation);
+        roughnessImage = VK_NULL_HANDLE;
+        roughnessAllocation = VK_NULL_HANDLE;
     }
 
     if (sampler != VK_NULL_HANDLE) {
@@ -76,6 +89,9 @@ void GBuffer::createResources() {
 
     createImage(NORMAL_FORMAT, normalImage, normalAllocation);
     createImageView(normalImage, NORMAL_FORMAT, normalImageView);
+
+    createImage(ROUGHNESS_FORMAT, roughnessImage, roughnessAllocation);
+    createImageView(roughnessImage, ROUGHNESS_FORMAT, roughnessImageView);
 }
 
 void GBuffer::createImage(VkFormat format, VkImage& image, VmaAllocation& allocation) {
@@ -166,11 +182,18 @@ void GBuffer::createDescriptorSetLayout() {
     depthBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     depthBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding bindings[] = { albedoBinding, normalBinding, depthBinding };
+    VkDescriptorSetLayoutBinding roughnessBinding{};
+    roughnessBinding.binding = 3;
+    roughnessBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    roughnessBinding.descriptorCount = 1;
+    roughnessBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    roughnessBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding bindings[] = { albedoBinding, normalBinding, depthBinding, roughnessBinding };
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 3;
+    layoutInfo.bindingCount = 4;
     layoutInfo.pBindings = bindings;
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
@@ -181,7 +204,7 @@ void GBuffer::createDescriptorSetLayout() {
 void GBuffer::createDescriptorPool() {
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize.descriptorCount = 3 * MAX_FRAMES_IN_FLIGHT;
+    poolSize.descriptorCount = 4 * MAX_FRAMES_IN_FLIGHT;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -226,7 +249,12 @@ void GBuffer::updateDescriptorSets(VkImageView depthImageView) {
         depthInfo.imageView = depthImageView;
         depthInfo.sampler = sampler;
 
-        VkWriteDescriptorSet descriptorWrites[3]{};
+        VkDescriptorImageInfo roughnessInfo{};
+        roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        roughnessInfo.imageView = roughnessImageView;
+        roughnessInfo.sampler = sampler;
+
+        VkWriteDescriptorSet descriptorWrites[4]{};
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = descriptorSets[i];
@@ -252,6 +280,14 @@ void GBuffer::updateDescriptorSets(VkImageView depthImageView) {
         descriptorWrites[2].descriptorCount = 1;
         descriptorWrites[2].pImageInfo = &depthInfo;
 
-        vkUpdateDescriptorSets(device, 3, descriptorWrites, 0, nullptr);
+        descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[3].dstSet = descriptorSets[i];
+        descriptorWrites[3].dstBinding = 3;
+        descriptorWrites[3].dstArrayElement = 0;
+        descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[3].descriptorCount = 1;
+        descriptorWrites[3].pImageInfo = &roughnessInfo;
+
+        vkUpdateDescriptorSets(device, 4, descriptorWrites, 0, nullptr);
     }
 }

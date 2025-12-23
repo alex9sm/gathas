@@ -1,6 +1,7 @@
 #include "imguilayer.hpp"
 #include "../core/scene.hpp"
 #include "../core/directionallight.hpp"
+#include "../core/pointlight.hpp"
 #include "../core/camera.hpp"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_vulkan.h"
@@ -16,7 +17,7 @@ ImGuiLayer::~ImGuiLayer() {
 
 void ImGuiLayer::init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice,
     VkDevice device, uint32_t graphicsQueueFamily, VkQueue graphicsQueue,
-    VkRenderPass renderPass, uint32_t imageCount, Scene* scene, DirectionalLight* light, Camera* camera) {
+    VkRenderPass renderPass, uint32_t imageCount, Scene* scene, DirectionalLight* light, PointLight* pointLight, Camera* camera) {
     this->device = device;
 
     createDescriptorPool(imageCount);
@@ -47,10 +48,12 @@ void ImGuiLayer::init(GLFWwindow* window, VkInstance instance, VkPhysicalDevice 
     ImGui_ImplVulkan_Init(&init_info);
 
     leftPanel = std::make_unique<LeftPanel>();
-    bottomPanel = std::make_unique<BottomPanel>(scene, "D:/codingfolder/Gathas/assets");
+    bottomPanel = std::make_unique<BottomPanel>(scene, "D:/codingfolder/Gathas/assets", light, pointLight);
     directionalLightPanel = std::make_unique<DirectionalLightPanel>(light);
+    pointLightPanel = std::make_unique<PointLightPanel>(pointLight);
     cameraPanel = std::make_unique<CameraPanel>(camera);
-    rightPanel = std::make_unique<RightPanel>(scene, light, directionalLightPanel.get(), cameraPanel.get());
+    scenePanel = std::make_unique<ScenePanel>(light);
+    rightPanel = std::make_unique<RightPanel>(scene, light, pointLight, directionalLightPanel.get(), pointLightPanel.get(), cameraPanel.get(), scenePanel.get());
 
     std::cout << "imgui layer initialized" << std::endl;
 }
@@ -59,7 +62,9 @@ void ImGuiLayer::cleanup() {
     leftPanel.reset();
     bottomPanel.reset();
     directionalLightPanel.reset();
+    pointLightPanel.reset();
     cameraPanel.reset();
+    scenePanel.reset();
     rightPanel.reset();
 
     ImGui_ImplVulkan_Shutdown();
@@ -115,8 +120,14 @@ void ImGuiLayer::endFrame(float deltaTime) {
     if (directionalLightPanel) {
         directionalLightPanel->render();
     }
+    if (pointLightPanel) {
+        pointLightPanel->render();
+    }
     if (cameraPanel) {
         cameraPanel->render();
+    }
+    if (scenePanel) {
+        scenePanel->render();
     }
     if (rightPanel) {
         rightPanel->render();

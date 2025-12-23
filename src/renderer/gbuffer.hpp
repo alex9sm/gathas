@@ -8,6 +8,7 @@ class GBuffer {
 public:
     static constexpr VkFormat ALBEDO_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
     static constexpr VkFormat NORMAL_FORMAT = VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+    static constexpr VkFormat ROUGHNESS_FORMAT = VK_FORMAT_R8_UNORM;
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 private:
@@ -22,6 +23,10 @@ private:
     VkImage normalImage;
     VmaAllocation normalAllocation;
     VkImageView normalImageView;
+
+    VkImage roughnessImage;
+    VmaAllocation roughnessAllocation;
+    VkImageView roughnessImageView;
 
     VkSampler sampler;
     VkDescriptorSetLayout descriptorSetLayout;
@@ -38,6 +43,7 @@ public:
 
     VkImageView getAlbedoImageView() const { return albedoImageView; }
     VkImageView getNormalImageView() const { return normalImageView; }
+    VkImageView getRoughnessImageView() const { return roughnessImageView; }
     VkSampler getSampler() const { return sampler; }
     VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
     VkDescriptorSet getDescriptorSet(uint32_t frameIndex) const { return descriptorSets[frameIndex]; }

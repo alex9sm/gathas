@@ -147,6 +147,10 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             currentMaterial.hasAlpha = (currentMaterial.dissolve < 1.0f) ||
                 (currentMaterial.hasTexture && currentMaterial.diffuseTexture->hasAlpha);
 
+            // clamp roughness to valid range
+            if (currentMaterial.roughness < 0.0f) currentMaterial.roughness = 0.0f;
+            if (currentMaterial.roughness > 1.0f) currentMaterial.roughness = 1.0f;
+
             materialNameToIndex[currentMaterial.name] = static_cast<uint32_t>(materials.size());
             materials.push_back(currentMaterial);
             hasMaterial = false;
@@ -172,6 +176,7 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             currentMaterial.descriptorSet = VK_NULL_HANDLE;
             currentMaterial.diffuseColor = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f); // daefault magenta
             currentMaterial.dissolve = 1.0f; // fully opaque by default
+            currentMaterial.roughness = 1.0f; // fully rough by default
             currentMaterial.hasTexture = false;
             currentMaterial.hasNormalMap = false;
             currentMaterial.hasAlpha = false;
@@ -195,7 +200,7 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             std::string texturePath;
             iss >> texturePath;
 
-            // -bm flag if present (bump multiplier, ignore for now)
+            // -bm flag if present
             if (texturePath == "-bm") {
                 float bumpMultiplier;
                 iss >> bumpMultiplier >> texturePath;
@@ -207,8 +212,7 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
         else if (token == "d" && hasMaterial) {
             float d;
             iss >> d;
-            // ignore d=0.0 as it's often an export error
-            // only use dissolve for semi-transparent values (0.01 to 0.99)
+            // only use dissolve for values 0.01 to 0.99
             if (d > 0.01f && d < 1.0f) {
                 currentMaterial.dissolve = d;
             }
@@ -221,6 +225,11 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
             if (d > 0.01f && d < 1.0f) {
                 currentMaterial.dissolve = d;
             }
+        }
+        else if ((token == "Pr" || token == "roughness") && hasMaterial) {
+            float r;
+            iss >> r;
+            currentMaterial.roughness = r;
         }
         else if (token == "map_Disp" || token == "map_d" || token == "map_Ka") {
             continue;

@@ -16,6 +16,7 @@ public:
         VkDescriptorSet descriptorSet;
         glm::vec4 diffuseColor;
         float dissolve;         // MTL 'd' value (1.0 = opaque, 0.0 = fully transparent)
+        float roughness;        // MTL 'Pr' value (0.0 = smooth/mirror, 1.0 = rough/matte)
         bool hasTexture;
         bool hasNormalMap;
         bool hasAlpha;          // true if texture has alpha or dissolve < 1.0

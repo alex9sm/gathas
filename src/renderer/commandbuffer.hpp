@@ -25,7 +25,7 @@ public:
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
         VkDescriptorSet cameraDescriptorSet, VkDescriptorSet gbufferDescriptorSet,
-        VkDescriptorSet lightDescriptorSet);
+        VkDescriptorSet lightDescriptorSet, VkDescriptorSet pointLightDescriptorSet);
 
     void recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
@@ -44,6 +44,7 @@ public:
         VkRenderPass lightingRenderPass, const std::vector<VkFramebuffer>& lightingFramebuffers,
         VkPipeline lightingPipeline, VkPipelineLayout lightingPipelineLayout,
         VkDescriptorSet gbufferDescriptorSet, VkDescriptorSet lightDescriptorSet,
+        VkDescriptorSet pointLightDescriptorSet,
         VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
         VkPipeline forwardPipeline, VkPipelineLayout forwardPipelineLayout,
         const glm::mat4& viewProj,

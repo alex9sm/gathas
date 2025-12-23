@@ -150,6 +150,7 @@
     <ClCompile Include="src\core\application.cpp" />
     <ClCompile Include="src\core\camera.cpp" />
     <ClCompile Include="src\core\directionallight.cpp" />
+    <ClCompile Include="src\core\pointlight.cpp" />
     <ClCompile Include="src\core\scene.cpp" />
     <ClCompile Include="src\renderer\gbuffer.cpp" />
     <ClCompile Include="src\renderer\indirectdrawing.cpp" />
@@ -168,7 +169,9 @@
     <ClCompile Include="src\ui\panels\camerapanel.cpp" />
     <ClCompile Include="src\ui\panels\directionallightpanel.cpp" />
     <ClCompile Include="src\ui\panels\leftpanel.cpp" />
+    <ClCompile Include="src\ui\panels\pointlightpanel.cpp" />
     <ClCompile Include="src\ui\panels\rightpanel.cpp" />
+    <ClCompile Include="src\ui\panels\scenepanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dependencies\imgui\imconfig.h" />
@@ -185,6 +188,7 @@
     <ClInclude Include="src\core\application.hpp" />
     <ClInclude Include="src\core\camera.hpp" />
     <ClInclude Include="src\core\directionallight.hpp" />
+    <ClInclude Include="src\core\pointlight.hpp" />
     <ClInclude Include="src\core\scene.hpp" />
     <ClInclude Include="src\renderer\gbuffer.hpp" />
     <ClInclude Include="src\renderer\indirectdrawing.hpp" />
@@ -205,11 +209,14 @@
     <ClInclude Include="src\ui\panels\camerapanel.hpp" />
     <ClInclude Include="src\ui\panels\directionallightpanel.hpp" />
     <ClInclude Include="src\ui\panels\leftpanel.hpp" />
+    <ClInclude Include="src\ui\panels\pointlightpanel.hpp" />
     <ClInclude Include="src\ui\panels\rightpanel.hpp" />
+    <ClInclude Include="src\ui\panels\scenepanel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
     <None Include="shaders\forward.frag" />
+    <None Include="shaders\forward_frag.spv" />
     <None Include="shaders\frag.spv" />
     <None Include="shaders\geometry.frag" />
     <None Include="shaders\geometry.vert" />

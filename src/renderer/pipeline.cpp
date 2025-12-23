@@ -3,6 +3,7 @@
 #include "vertex.hpp"
 #include "../core/camera.hpp"
 #include "../core/directionallight.hpp"
+#include "../core/pointlight.hpp"
 #include "materialmanager.hpp"
 #include "gbuffer.hpp"
 #include <iostream>
@@ -25,7 +26,7 @@ void Pipeline::initialize(VkExtent2D swapChainExtent, VkFormat swapChainImageFor
     ShaderManager* shaderManager, const std::string& vertShaderName,
     const std::string& fragShaderName, Camera* camera, MaterialManager* materialManager,
     GBuffer* gbuffer, const std::vector<VkImageView>& swapChainImageViews,
-    DirectionalLight* light) {
+    DirectionalLight* light, PointLight* pointLight) {
 
     this->swapChainExtent = swapChainExtent;
     this->swapChainImageFormat = swapChainImageFormat;
@@ -45,7 +46,7 @@ void Pipeline::initialize(VkExtent2D swapChainExtent, VkFormat swapChainImageFor
     createImGuiRenderPass(swapChainImageFormat);
     createImGuiFramebuffers(swapChainImageViews);
     createGeometryPipeline(shaderManager);
-    createLightingPipeline(shaderManager, gbuffer, light);
+    createLightingPipeline(shaderManager, gbuffer, light, pointLight);
     createForwardPipeline(shaderManager, light);
 
     gbuffer->updateDescriptorSets(depthImageView);
@@ -127,7 +128,7 @@ void Pipeline::createDescriptorSetLayout() {
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     uboLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -312,7 +313,18 @@ void Pipeline::createGeometryRenderPass() {
     normalAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     normalAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    // Attachment 2: Depth
+    // Attachment 2: Roughness
+    VkAttachmentDescription roughnessAttachment{};
+    roughnessAttachment.format = VK_FORMAT_R8_UNORM;
+    roughnessAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    roughnessAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    roughnessAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    roughnessAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    roughnessAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    roughnessAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    roughnessAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    // Attachment 3: Depth
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = depthFormat;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -324,21 +336,23 @@ void Pipeline::createGeometryRenderPass() {
     depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
     // Color attachment references
-    VkAttachmentReference colorAttachmentRefs[2]{};
+    VkAttachmentReference colorAttachmentRefs[3]{};
     colorAttachmentRefs[0].attachment = 0;
     colorAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachmentRefs[1].attachment = 1;
     colorAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachmentRefs[2].attachment = 2;
+    colorAttachmentRefs[2].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     // Depth attachment reference
     VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = 2;
+    depthAttachmentRef.attachment = 3;
     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     // Subpass
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 2;
+    subpass.colorAttachmentCount = 3;
     subpass.pColorAttachments = colorAttachmentRefs;
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
@@ -351,7 +365,7 @@ void Pipeline::createGeometryRenderPass() {
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    std::array<VkAttachmentDescription, 3> attachments = { albedoAttachment, normalAttachment, depthAttachment };
+    std::array<VkAttachmentDescription, 4> attachments = { albedoAttachment, normalAttachment, roughnessAttachment, depthAttachment };
 
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -518,9 +532,10 @@ void Pipeline::createGeometryFramebuffers(GBuffer* gbuffer, uint32_t swapChainIm
     geometryFramebuffers.resize(swapChainImageCount);
 
     for (uint32_t i = 0; i < swapChainImageCount; i++) {
-        std::array<VkImageView, 3> attachments = {
+        std::array<VkImageView, 4> attachments = {
             gbuffer->getAlbedoImageView(),
             gbuffer->getNormalImageView(),
+            gbuffer->getRoughnessImageView(),
             depthImageView
         };
 
@@ -695,8 +710,8 @@ void Pipeline::createGeometryPipeline(ShaderManager* shaderManager) {
     depthStencil.front = {};
     depthStencil.back = {};
 
-    // color blending - two attachments for albedo and normal outputs
-    VkPipelineColorBlendAttachmentState colorBlendAttachments[2]{};
+    // color blending - three attachments for albedo, normal, and roughness outputs
+    VkPipelineColorBlendAttachmentState colorBlendAttachments[3]{};
     colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
         VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachments[0].blendEnable = VK_FALSE;
@@ -705,11 +720,14 @@ void Pipeline::createGeometryPipeline(ShaderManager* shaderManager) {
         VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachments[1].blendEnable = VK_FALSE;
 
+    colorBlendAttachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
+    colorBlendAttachments[2].blendEnable = VK_FALSE;
+
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
-    colorBlending.attachmentCount = 2;
+    colorBlending.attachmentCount = 3;
     colorBlending.pAttachments = colorBlendAttachments;
     colorBlending.blendConstants[0] = 0.0f;
     colorBlending.blendConstants[1] = 0.0f;
@@ -723,7 +741,7 @@ void Pipeline::createGeometryPipeline(ShaderManager* shaderManager) {
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = 32; // vec4 diffuseColor (16) + uint hasTexture (4) + uint hasNormalMap (4) + float dissolve (4) + float padding (4)
+    pushConstantRange.size = 32; // vec4 diffuseColor (16) + uint hasTexture (4) + uint hasNormalMap (4) + float dissolve (4) + float roughness (4)
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -761,19 +779,20 @@ void Pipeline::createGeometryPipeline(ShaderManager* shaderManager) {
     std::cout << "geometry pipeline created" << std::endl;
 }
 
-void Pipeline::createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light) {
+void Pipeline::createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light, PointLight* pointLight) {
     // Get descriptor set layout from GBuffer
     lightingDescriptorSetLayout = gbuffer->getDescriptorSetLayout();
 
-    // Create pipeline layout with three descriptor set layouts
+    // Create pipeline layout with four descriptor set layouts
     // Set 0: camera UBO (for inverse view-projection matrix for depth reconstruction)
     // Set 1: G-Buffer samplers
-    // Set 2: Light UBO
-    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, lightingDescriptorSetLayout, light->getDescriptorSetLayout() };
+    // Set 2: Directional Light UBO
+    // Set 3: Point Light UBO
+    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, lightingDescriptorSetLayout, light->getDescriptorSetLayout(), pointLight->getDescriptorSetLayout() };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 3;
+    pipelineLayoutInfo.setLayoutCount = 4;
     pipelineLayoutInfo.pSetLayouts = setLayouts;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;

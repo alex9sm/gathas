@@ -5,9 +5,12 @@
 #include <vector>
 #include <string>
 
+class DirectionalLight;
+class PointLight;
+
 class BottomPanel {
 public:
-    BottomPanel(Scene* scene, const std::string& assetsPath);
+    BottomPanel(Scene* scene, const std::string& assetsPath, DirectionalLight* dirLight, PointLight* pointLight);
     ~BottomPanel();
 
     BottomPanel(const BottomPanel&) = delete;
@@ -21,11 +24,14 @@ private:
     Scene* scene;
     std::string assetsPath;
     std::vector<std::string> assetFolders;
+    DirectionalLight* dirLight;
+    PointLight* pointLight;
 
     const float panelWidth = 200.0f;
     const float panelHeight = 600.0f;
 
-    int selectedIndex = -1;
+    int selectedModelIndex = -1;
+    int selectedActorIndex = -1;
 
     void scanAssetFolders();
 };

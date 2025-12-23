@@ -1,11 +1,14 @@
 #include "rightpanel.hpp"
 #include "directionallightpanel.hpp"
+#include "pointlightpanel.hpp"
 #include "camerapanel.hpp"
+#include "scenepanel.hpp"
 #include "../../core/scene.hpp"
 #include "../../core/directionallight.hpp"
+#include "../../core/pointlight.hpp"
 
-RightPanel::RightPanel(Scene* scene, DirectionalLight* light, DirectionalLightPanel* dirLightPanel, CameraPanel* cameraPanel)
-    : scene(scene), light(light), dirLightPanel(dirLightPanel), cameraPanel(cameraPanel), selectedObject("") {
+RightPanel::RightPanel(Scene* scene, DirectionalLight* light, PointLight* pointLight, DirectionalLightPanel* dirLightPanel, PointLightPanel* pointLightPanel, CameraPanel* cameraPanel, ScenePanel* scenePanel)
+    : scene(scene), light(light), pointLight(pointLight), dirLightPanel(dirLightPanel), pointLightPanel(pointLightPanel), cameraPanel(cameraPanel), scenePanel(scenePanel), selectedObject("") {
 }
 
 RightPanel::~RightPanel() {
@@ -32,14 +35,44 @@ void RightPanel::render() {
     ImGui::Text("Scene Objects");
     ImGui::Separator();
 
+    if (ImGui::Selectable("Scene", selectedObject == "Scene")) {
+        selectedObject = "Scene";
+        scenePanel->setOpen(true);
+    }
+
     if (ImGui::Selectable("Camera", selectedObject == "Camera")) {
         selectedObject = "Camera";
         cameraPanel->setOpen(true);
     }
 
-    if (ImGui::Selectable("Directional Light", selectedObject == "Directional Light")) {
-        selectedObject = "Directional Light";
-        dirLightPanel->setOpen(true);
+    if (light && light->isEnabled()) {
+        if (ImGui::Selectable("Directional Light", selectedObject == "Directional Light")) {
+            selectedObject = "Directional Light";
+            dirLightPanel->setOpen(true);
+        }
+
+        if (ImGui::BeginPopupContextItem("dirlight_context")) {
+            if (ImGui::MenuItem("Remove")) {
+                light->setEnabled(false);
+                selectedObject = "";
+            }
+            ImGui::EndPopup();
+        }
+    }
+
+    if (pointLight && pointLight->isEnabled()) {
+        if (ImGui::Selectable("Point Light", selectedObject == "Point Light")) {
+            selectedObject = "Point Light";
+            pointLightPanel->setOpen(true);
+        }
+
+        if (ImGui::BeginPopupContextItem("pointlight_context")) {
+            if (ImGui::MenuItem("Remove")) {
+                pointLight->setEnabled(false);
+                selectedObject = "";
+            }
+            ImGui::EndPopup();
+        }
     }
 
     if (scene) {
