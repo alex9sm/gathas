@@ -79,7 +79,7 @@ void main() {
     vec3 albedo = texture(albedoSampler, fragTexCoord).rgb;
     vec3 normal = normalize(texture(normalSampler, fragTexCoord).rgb * 2.0 - 1.0);
     float depth = texture(depthSampler, fragTexCoord).r;
-    float roughness = texture(roughnessSampler, fragTexCoord).r;
+    float roughness = max(texture(roughnessSampler, fragTexCoord).r, 0.04);
     if (depth >= 1.0) {
         outColor = vec4(albedo, 1.0);
         return;

@@ -22,6 +22,13 @@ layout(set = 2, binding = 0) uniform LightingUBO {
     float padding;
 } light;
 
+layout(set = 3, binding = 0) uniform PointLightUBO {
+    vec3 position;
+    float intensity;
+    vec3 color;
+    float padding;
+} pointLight;
+
 layout(push_constant) uniform MaterialPushConstants {
     vec4 diffuseColor;
     uint hasTexture;
@@ -126,7 +133,28 @@ void main() {
     vec3 specular = (D * F * G) / denominator;
     specular = specular * light.color * light.intensity * NdotL;
 
-    vec3 finalColor = ambient + diffuse + specular;
+    // point light contribution
+    vec3 pointLightDir = normalize(pointLight.position - fragWorldPos);
+    float distance = length(pointLight.position - fragWorldPos);
+    float attenuation = 1.0 / (distance * distance);
+
+    float pNdotL = max(dot(normal, pointLightDir), 0.0);
+    vec3 pHalfDir = normalize(pointLightDir + viewDir);
+    float pNdotH = max(dot(normal, pHalfDir), 0.0);
+    float pHdotV = max(dot(pHalfDir, viewDir), 0.0);
+
+    // point light diffuse
+    vec3 pDiffuse = pointLight.color * pointLight.intensity * pNdotL * albedo.rgb * attenuation;
+
+    // point light specular
+    vec3 pF = fresnelSchlick(pHdotV, F0);
+    float pD = distributionGGX(pNdotH, roughness);
+    float pG = geometrySmith(NdotV, pNdotL, roughness);
+    float pDenom = 4.0 * NdotV * pNdotL + 0.0001;
+    vec3 pSpecular = (pD * pF * pG) / pDenom;
+    pSpecular = pSpecular * pointLight.color * pointLight.intensity * pNdotL * attenuation;
+
+    vec3 finalColor = ambient + diffuse + specular + pDiffuse + pSpecular;
 
     outColor = vec4(finalColor, alpha);
 }

@@ -37,6 +37,7 @@ public:
 
     bool wantCaptureMouse() const;
     bool wantCaptureKeyboard() const;
+    bool getShowAABBs() const { return leftPanel ? leftPanel->getShowAABBs() : false; }
 
 private:
     VkDevice device;

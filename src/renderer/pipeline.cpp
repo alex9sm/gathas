@@ -14,8 +14,10 @@ Pipeline::Pipeline(VkDevice device, VkPhysicalDevice physicalDevice)
     : device(device), physicalDevice(physicalDevice), geometryPipeline(VK_NULL_HANDLE),
     pipelineLayout(VK_NULL_HANDLE), lightingPipeline(VK_NULL_HANDLE), lightingPipelineLayout(VK_NULL_HANDLE),
     forwardPipeline(VK_NULL_HANDLE), forwardPipelineLayout(VK_NULL_HANDLE),
+    debugPipeline(VK_NULL_HANDLE), debugPipelineLayout(VK_NULL_HANDLE),
     lightingDescriptorSetLayout(VK_NULL_HANDLE), geometryRenderPass(VK_NULL_HANDLE),
-    lightingRenderPass(VK_NULL_HANDLE), forwardRenderPass(VK_NULL_HANDLE), imguiRenderPass(VK_NULL_HANDLE),
+    lightingRenderPass(VK_NULL_HANDLE), forwardRenderPass(VK_NULL_HANDLE),
+    debugRenderPass(VK_NULL_HANDLE), imguiRenderPass(VK_NULL_HANDLE),
     swapChainExtent{}, swapChainImageFormat(VK_FORMAT_UNDEFINED), camera(nullptr),
     descriptorSetLayout(VK_NULL_HANDLE), descriptorPool(VK_NULL_HANDLE),
     materialDescriptorSetLayout(VK_NULL_HANDLE),
@@ -43,17 +45,23 @@ void Pipeline::initialize(VkExtent2D swapChainExtent, VkFormat swapChainImageFor
     createLightingFramebuffers(swapChainImageViews);
     createForwardRenderPass(swapChainImageFormat);
     createForwardFramebuffers(swapChainImageViews);
+    createDebugRenderPass(swapChainImageFormat);
+    createDebugFramebuffers(swapChainImageViews);
     createImGuiRenderPass(swapChainImageFormat);
     createImGuiFramebuffers(swapChainImageViews);
     createGeometryPipeline(shaderManager);
     createLightingPipeline(shaderManager, gbuffer, light, pointLight);
-    createForwardPipeline(shaderManager, light);
+    createForwardPipeline(shaderManager, light, pointLight);
+    createDebugPipeline(shaderManager);
 
     gbuffer->updateDescriptorSets(depthImageView);
 }
 
 Pipeline::~Pipeline() {
     // pipelines
+    if (debugPipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(device, debugPipeline, nullptr);
+    }
     if (forwardPipeline != VK_NULL_HANDLE) {
         vkDestroyPipeline(device, forwardPipeline, nullptr);
     }
@@ -65,6 +73,9 @@ Pipeline::~Pipeline() {
     }
 
     // Pipeline layouts
+    if (debugPipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(device, debugPipelineLayout, nullptr);
+    }
     if (forwardPipelineLayout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(device, forwardPipelineLayout, nullptr);
     }
@@ -77,6 +88,9 @@ Pipeline::~Pipeline() {
 
     // Framebuffers
     for (auto framebuffer : imguiFramebuffers) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
+    for (auto framebuffer : debugFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
     for (auto framebuffer : forwardFramebuffers) {
@@ -92,6 +106,9 @@ Pipeline::~Pipeline() {
     // Render passes
     if (imguiRenderPass != VK_NULL_HANDLE) {
         vkDestroyRenderPass(device, imguiRenderPass, nullptr);
+    }
+    if (debugRenderPass != VK_NULL_HANDLE) {
+        vkDestroyRenderPass(device, debugRenderPass, nullptr);
     }
     if (forwardRenderPass != VK_NULL_HANDLE) {
         vkDestroyRenderPass(device, forwardRenderPass, nullptr);
@@ -922,7 +939,7 @@ void Pipeline::createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbu
     std::cout << "lighting pipeline created" << std::endl;
 }
 
-void Pipeline::createForwardPipeline(ShaderManager* shaderManager, DirectionalLight* light) {
+void Pipeline::createForwardPipeline(ShaderManager* shaderManager, DirectionalLight* light, PointLight* pointLight) {
     // forward pipeline uses same vertex shader as geometry but different fragment shader
     VkShaderModule vertShaderModule = shaderManager->getShaderModule("geometry_vert.spv");
     VkShaderModule fragShaderModule = shaderManager->getShaderModule("forward_frag.spv");
@@ -1016,7 +1033,7 @@ void Pipeline::createForwardPipeline(ShaderManager* shaderManager, DirectionalLi
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, materialDescriptorSetLayout, light->getDescriptorSetLayout() };
+    VkDescriptorSetLayout setLayouts[] = { descriptorSetLayout, materialDescriptorSetLayout, light->getDescriptorSetLayout(), pointLight->getDescriptorSetLayout() };
 
     // push constants
     VkPushConstantRange pushConstantRange{};
@@ -1026,7 +1043,7 @@ void Pipeline::createForwardPipeline(ShaderManager* shaderManager, DirectionalLi
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 3;
+    pipelineLayoutInfo.setLayoutCount = 4;
     pipelineLayoutInfo.pSetLayouts = setLayouts;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -1058,4 +1075,227 @@ void Pipeline::createForwardPipeline(ShaderManager* shaderManager, DirectionalLi
     }
 
     std::cout << "forward pipeline created" << std::endl;
+}
+
+void Pipeline::createDebugRenderPass(VkFormat swapChainImageFormat) {
+    // Color attachment - load from forward pass, store for imgui
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapChainImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    // Depth attachment - read-only for depth testing
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = depthFormat;
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+
+    std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &debugRenderPass) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create debug render pass");
+    }
+}
+
+void Pipeline::createDebugFramebuffers(const std::vector<VkImageView>& swapChainImageViews) {
+    debugFramebuffers.resize(swapChainImageViews.size());
+
+    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+        std::array<VkImageView, 2> attachments = {
+            swapChainImageViews[i],
+            depthImageView
+        };
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = debugRenderPass;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = swapChainExtent.width;
+        framebufferInfo.height = swapChainExtent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &debugFramebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create debug framebuffer");
+        }
+    }
+}
+
+void Pipeline::createDebugPipeline(ShaderManager* shaderManager) {
+    VkShaderModule vertShaderModule = shaderManager->getShaderModule("debug_vert.spv");
+    VkShaderModule fragShaderModule = shaderManager->getShaderModule("debug_frag.spv");
+
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.module = vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+    // Vertex input - position and color
+    VkVertexInputBindingDescription bindingDescription{};
+    bindingDescription.binding = 0;
+    bindingDescription.stride = sizeof(float) * 6; // vec3 position + vec3 color
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+    attributeDescriptions[0].binding = 0;
+    attributeDescriptions[0].location = 0;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[0].offset = 0;
+
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[1].offset = sizeof(float) * 3;
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+    // Input assembly - line list
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = static_cast<float>(swapChainExtent.height);
+    viewport.width = static_cast<float>(swapChainExtent.width);
+    viewport.height = -static_cast<float>(swapChainExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = swapChainExtent;
+
+    VkPipelineViewportStateCreateInfo viewportState{};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.pViewports = &viewport;
+    viewportState.scissorCount = 1;
+    viewportState.pScissors = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_FALSE;
+    depthStencil.depthWriteEnable = VK_FALSE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_FALSE;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo colorBlending{};
+    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.attachmentCount = 1;
+    colorBlending.pAttachments = &colorBlendAttachment;
+
+    // Pipeline layout - only camera descriptor set
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &debugPipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create debug pipeline layout");
+    }
+
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDynamicState = nullptr;
+    pipelineInfo.layout = debugPipelineLayout;
+    pipelineInfo.renderPass = debugRenderPass;
+    pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = nullptr;
+    pipelineInfo.basePipelineIndex = -1;
+
+    if (vkCreateGraphicsPipelines(device, nullptr, 1, &pipelineInfo, nullptr, &debugPipeline) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create debug pipeline");
+    }
+
+    std::cout << "debug pipeline created" << std::endl;
 }

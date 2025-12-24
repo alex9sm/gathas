@@ -39,6 +39,19 @@ void Scene::loadModel(const std::string& assetFolderPath, const std::string& mod
 
     try {
         model.mesh->loadFromFile(objPath, allocator, commandBuffer);
+
+        // compute AABB for each submesh
+        const auto& vertices = model.mesh->getVertices();
+        const auto& indices = model.mesh->getIndices();
+        uint32_t submeshCount = model.mesh->getSubmeshCount();
+
+        model.submeshAABBs.reserve(submeshCount);
+        for (uint32_t i = 0; i < submeshCount; ++i) {
+            const SubMesh& submesh = model.mesh->getSubmesh(i);
+            AABB aabb = AABB::computeFromSubmesh(vertices, indices, submesh.indexOffset, submesh.indexCount);
+            model.submeshAABBs.push_back(aabb);
+        }
+
         models.push_back(std::move(model));
         std::cout << "Successfully loaded model: " << modelName << " (Total models: " << models.size() << ")" << std::endl;
 

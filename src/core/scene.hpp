@@ -6,6 +6,7 @@
 #include "../renderer/commandbuffer.hpp"
 #include "../renderer/indirectdrawing.hpp"
 #include "../renderer/gpubuffer.hpp"
+#include "../ui/primitives/aabb.hpp"
 #include "vk_mem_alloc.h"
 #include <vector>
 #include <memory>
@@ -18,6 +19,7 @@ public:
         std::unique_ptr<Mesh> mesh;
         std::string name;
         std::string folderPath;
+        std::vector<AABB> submeshAABBs;
     };
 
     Scene(VmaAllocator allocator, CommandBuffer* commandBuffer,

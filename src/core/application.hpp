@@ -15,6 +15,7 @@
 #include "../renderer/texturemanager.hpp"
 #include "../renderer/materialmanager.hpp"
 #include "../renderer/gbuffer.hpp"
+#include "../ui/primitives/debugdraw.hpp"
 #include <Vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 #include <optional>
@@ -69,6 +70,7 @@ private:
     std::unique_ptr<DirectionalLight> directionalLight;
     std::unique_ptr<PointLight> pointLight;
     std::unique_ptr<ImGuiLayer> imguiLayer;
+    std::unique_ptr<DebugDraw> debugDraw;
 
     uint32_t currentFrame = 0;
     bool framebufferResized = false;
@@ -96,6 +98,7 @@ private:
     void cleanup();
     void recreateSwapChain();
     void createImGuiLayer();
+    void createDebugDraw();
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 

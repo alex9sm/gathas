@@ -55,6 +55,7 @@ void Application::initVulkan() {
     createPointLight();
     createPipeline();
     createScene();
+    createDebugDraw();
     createImGuiLayer();
 
     camera->setImGuiLayer(imguiLayer.get());
@@ -307,6 +308,24 @@ void Application::drawFrame() {
     imguiLayer->beginFrame();
     imguiLayer->endFrame(deltaTime);
 
+    // clear and prepare debug draw for this frame
+    debugDraw->clear();
+
+    // draw AABB if enabled
+    if (imguiLayer->getShowAABBs()) {
+        const glm::vec3 aabbColor(0.0f, 1.0f, 0.0f); // green
+        for (size_t i = 0; i < scene->getModelCount(); ++i) {
+            const Scene::Model* model = scene->getModel(i);
+            if (model) {
+                for (const AABB& aabb : model->submeshAABBs) {
+                    debugDraw->drawAABB(aabb.min, aabb.max, aabbColor);
+                }
+            }
+        }
+    }
+
+    debugDraw->upload();
+
     glm::mat4 viewProj = camera->getViewProjectionMatrix();
 
     commandBuffer->recordFrame(cmdBuffer, imageIndex, swapChain->getExtent(),
@@ -324,6 +343,10 @@ void Application::drawFrame() {
         pipeline->getForwardFramebuffers(),
         pipeline->getForwardPipeline(), pipeline->getForwardPipelineLayout(),
         viewProj,
+        pipeline->getDebugRenderPass(),
+        pipeline->getDebugFramebuffers(),
+        pipeline->getDebugPipeline(), pipeline->getDebugPipelineLayout(),
+        debugDraw.get(),
         pipeline->getImGuiRenderPass(),
         pipeline->getImGuiFramebuffers(),
         imguiLayer.get());
@@ -379,6 +402,11 @@ void Application::cleanup() {
     }
     imguiLayer.reset();
 
+    if (debugDraw) {
+        debugDraw->cleanup();
+    }
+    debugDraw.reset();
+
     //cleanup material and texture managers before commandBuffer
     if (materialManager) {
         materialManager->cleanup();
@@ -421,6 +449,11 @@ void Application::cleanup() {
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
+}
+
+void Application::createDebugDraw() {
+    debugDraw = std::make_unique<DebugDraw>();
+    debugDraw->init(device, allocator, commandBuffer.get());
 }
 
 void Application::framebufferResizeCallback(GLFWwindow* window, int width, int height) {

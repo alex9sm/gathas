@@ -1,5 +1,6 @@
 #include "commandbuffer.hpp"
 #include "../ui/imguilayer.hpp"
+#include "../ui/primitives/debugdraw.hpp"
 #include "../core/scene.hpp"
 #include "materialmanager.hpp"
 #include "indirectdrawing.hpp"
@@ -216,7 +217,7 @@ void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t im
     VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
     VkDescriptorSet cameraDescriptorSet, VkDescriptorSet lightDescriptorSet,
-    Scene* scene, const glm::mat4& viewProj) {
+    VkDescriptorSet pointLightDescriptorSet, Scene* scene, const glm::mat4& viewProj) {
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -241,6 +242,10 @@ void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t im
         // bind light descriptor set
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
             pipelineLayout, 2, 1, &lightDescriptorSet, 0, nullptr);
+
+        // bind point light descriptor set
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipelineLayout, 3, 1, &pointLightDescriptorSet, 0, nullptr);
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -301,6 +306,50 @@ void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t im
     vkCmdEndRenderPass(commandBuffer);
 }
 
+void CommandBuffer::recordDebugPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+    VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+    VkDescriptorSet cameraDescriptorSet, DebugDraw* debugDraw) {
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = framebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = extent;
+
+    renderPassInfo.clearValueCount = 0;
+    renderPassInfo.pClearValues = nullptr;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    if (debugDraw && debugDraw->hasLines()) {
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipelineLayout, 0, 1, &cameraDescriptorSet, 0, nullptr);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = static_cast<float>(extent.height);
+        viewport.width = static_cast<float>(extent.width);
+        viewport.height = -static_cast<float>(extent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = extent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        debugDraw->bind(commandBuffer);
+        debugDraw->draw(commandBuffer);
+    }
+
+    vkCmdEndRenderPass(commandBuffer);
+}
+
 void CommandBuffer::recordImGuiPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
     VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, ImGuiLayer* imguiLayer) {
@@ -335,6 +384,9 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
     VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
     VkPipeline forwardPipeline, VkPipelineLayout forwardPipelineLayout,
     const glm::mat4& viewProj,
+    VkRenderPass debugRenderPass, const std::vector<VkFramebuffer>& debugFramebuffers,
+    VkPipeline debugPipeline, VkPipelineLayout debugPipelineLayout,
+    DebugDraw* debugDraw,
     VkRenderPass imguiRenderPass, const std::vector<VkFramebuffer>& imguiFramebuffers,
     ImGuiLayer* imguiLayer) {
 
@@ -357,7 +409,10 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
 
     recordForwardPass(commandBuffer, imageIndex, forwardRenderPass, forwardFramebuffers,
         extent, forwardPipeline, forwardPipelineLayout, cameraDescriptorSet,
-        lightDescriptorSet, scene, viewProj);
+        lightDescriptorSet, pointLightDescriptorSet, scene, viewProj);
+
+    recordDebugPass(commandBuffer, imageIndex, debugRenderPass, debugFramebuffers,
+        extent, debugPipeline, debugPipelineLayout, cameraDescriptorSet, debugDraw);
 
     recordImGuiPass(commandBuffer, imageIndex, imguiRenderPass, imguiFramebuffers,
         extent, imguiLayer);

@@ -7,6 +7,7 @@
 class Scene;
 class ImGuiLayer;
 class MaterialManager;
+class DebugDraw;
 
 class CommandBuffer {
 public:
@@ -31,7 +32,12 @@ public:
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
         VkDescriptorSet cameraDescriptorSet, VkDescriptorSet lightDescriptorSet,
-        Scene* scene, const glm::mat4& viewProj);
+        VkDescriptorSet pointLightDescriptorSet, Scene* scene, const glm::mat4& viewProj);
+
+    void recordDebugPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+        VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+        VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
+        VkDescriptorSet cameraDescriptorSet, DebugDraw* debugDraw);
 
     void recordImGuiPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
@@ -48,6 +54,9 @@ public:
         VkRenderPass forwardRenderPass, const std::vector<VkFramebuffer>& forwardFramebuffers,
         VkPipeline forwardPipeline, VkPipelineLayout forwardPipelineLayout,
         const glm::mat4& viewProj,
+        VkRenderPass debugRenderPass, const std::vector<VkFramebuffer>& debugFramebuffers,
+        VkPipeline debugPipeline, VkPipelineLayout debugPipelineLayout,
+        DebugDraw* debugDraw,
         VkRenderPass imguiRenderPass, const std::vector<VkFramebuffer>& imguiFramebuffers,
         ImGuiLayer* imguiLayer);
 

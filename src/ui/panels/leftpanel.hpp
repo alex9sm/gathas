@@ -12,6 +12,7 @@ public:
 
     void render(float deltaTime);
     float getWidth() const { return panelWidth; }
+    bool getShowAABBs() const { return showAABBs; }
 
 private:
     float frameTime;
@@ -26,4 +27,5 @@ private:
     const float panelHeight = 600.0f;
 
     bool autoScroll = true;
+    bool showAABBs = false;
 };

@@ -33,17 +33,22 @@ public:
 	VkPipelineLayout getLightingPipelineLayout() const { return lightingPipelineLayout; }
 	VkPipeline getForwardPipeline() const { return forwardPipeline; }
 	VkPipelineLayout getForwardPipelineLayout() const { return forwardPipelineLayout; }
+	VkPipeline getDebugPipeline() const { return debugPipeline; }
+	VkPipelineLayout getDebugPipelineLayout() const { return debugPipelineLayout; }
 	VkRenderPass getGeometryRenderPass() const { return geometryRenderPass; }
 	VkRenderPass getLightingRenderPass() const { return lightingRenderPass; }
 	VkRenderPass getForwardRenderPass() const { return forwardRenderPass; }
+	VkRenderPass getDebugRenderPass() const { return debugRenderPass; }
 	VkRenderPass getImGuiRenderPass() const { return imguiRenderPass; }
 	VkFramebuffer getGeometryFramebuffer(uint32_t index) const { return geometryFramebuffers[index]; }
 	VkFramebuffer getLightingFramebuffer(uint32_t index) const { return lightingFramebuffers[index]; }
 	VkFramebuffer getForwardFramebuffer(uint32_t index) const { return forwardFramebuffers[index]; }
+	VkFramebuffer getDebugFramebuffer(uint32_t index) const { return debugFramebuffers[index]; }
 	VkFramebuffer getImGuiFramebuffer(uint32_t index) const { return imguiFramebuffers[index]; }
 	const std::vector<VkFramebuffer>& getGeometryFramebuffers() const { return geometryFramebuffers; }
 	const std::vector<VkFramebuffer>& getLightingFramebuffers() const { return lightingFramebuffers; }
 	const std::vector<VkFramebuffer>& getForwardFramebuffers() const { return forwardFramebuffers; }
+	const std::vector<VkFramebuffer>& getDebugFramebuffers() const { return debugFramebuffers; }
 	const std::vector<VkFramebuffer>& getImGuiFramebuffers() const { return imguiFramebuffers; }
 	VkDescriptorSet getDescriptorSet(uint32_t frame) const { return descriptorSets[frame]; }
 	VkImageView getDepthImageView() const { return depthImageView; }
@@ -52,8 +57,10 @@ public:
 	void createLightingFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createImGuiFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createForwardFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
+	void createDebugFramebuffers(const std::vector<VkImageView>& swapChainImageViews);
 	void createLightingPipeline(ShaderManager* shaderManager, GBuffer* gbuffer, DirectionalLight* light, PointLight* pointLight);
-	void createForwardPipeline(ShaderManager* shaderManager, DirectionalLight* light);
+	void createForwardPipeline(ShaderManager* shaderManager, DirectionalLight* light, PointLight* pointLight);
+	void createDebugPipeline(ShaderManager* shaderManager);
 
 private:
 	VkDevice device;
@@ -64,14 +71,18 @@ private:
 	VkPipelineLayout lightingPipelineLayout;
 	VkPipeline forwardPipeline;
 	VkPipelineLayout forwardPipelineLayout;
+	VkPipeline debugPipeline;
+	VkPipelineLayout debugPipelineLayout;
 	VkDescriptorSetLayout lightingDescriptorSetLayout;
 	VkRenderPass geometryRenderPass;
 	VkRenderPass lightingRenderPass;
 	VkRenderPass forwardRenderPass;
+	VkRenderPass debugRenderPass;
 	VkRenderPass imguiRenderPass;
 	std::vector<VkFramebuffer> geometryFramebuffers;
 	std::vector<VkFramebuffer> lightingFramebuffers;
 	std::vector<VkFramebuffer> forwardFramebuffers;
+	std::vector<VkFramebuffer> debugFramebuffers;
 	std::vector<VkFramebuffer> imguiFramebuffers;
 	VkExtent2D swapChainExtent;
 	VkFormat swapChainImageFormat;
@@ -96,6 +107,7 @@ private:
 	void createGeometryRenderPass();
 	void createLightingRenderPass(VkFormat swapChainImageFormat);
 	void createForwardRenderPass(VkFormat swapChainImageFormat);
+	void createDebugRenderPass(VkFormat swapChainImageFormat);
 	void createImGuiRenderPass(VkFormat swapChainImageFormat);
 
 	VkFormat findDepthFormat();

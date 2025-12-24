@@ -39,6 +39,8 @@ void LeftPanel::render(float deltaTime) {
     ImGui::Text("Frame Time: %.2f ms", displayedFrameTime);
     ImGui::Text("FPS: %.1f", displayedFPS);
 
+    ImGui::Checkbox("AABB", &showAABBs);
+
     ImGui::Separator();
 
     if (ImGui::Button("Clear Console")) {
