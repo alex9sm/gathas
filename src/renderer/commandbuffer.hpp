@@ -17,7 +17,7 @@ public:
     CommandBuffer(const CommandBuffer&) = delete;
     CommandBuffer& operator=(const CommandBuffer&) = delete;
 
-    void recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    void recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex,
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
         VkDescriptorSet descriptorSet, MaterialManager* materialManager, Scene* scene);
@@ -28,7 +28,7 @@ public:
         VkDescriptorSet cameraDescriptorSet, VkDescriptorSet gbufferDescriptorSet,
         VkDescriptorSet lightDescriptorSet, VkDescriptorSet pointLightDescriptorSet);
 
-    void recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    void recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex,
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
         VkDescriptorSet cameraDescriptorSet, VkDescriptorSet lightDescriptorSet,
@@ -43,7 +43,8 @@ public:
         VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, ImGuiLayer* imguiLayer);
 
-    void recordFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkExtent2D extent,
+    void recordFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex,
+        VkExtent2D extent,
         VkRenderPass geometryRenderPass, const std::vector<VkFramebuffer>& geometryFramebuffers,
         VkPipeline geometryPipeline, VkPipelineLayout geometryPipelineLayout,
         VkDescriptorSet cameraDescriptorSet, MaterialManager* materialManager, Scene* scene,

@@ -33,6 +33,21 @@ void CameraPanel::render() {
     ImGui::Text("Movement Speed");
     ImGui::SliderFloat("##Speed", camera->getSpeedPtr(), 10.0f, 2000.0f);
 
+    ImGui::Separator();
+    ImGui::Text("Debug Frustum Culling");
+
+    bool useDebugFov = camera->getUseDebugCullingFov();
+    if (ImGui::Checkbox("Use Debug Culling FOV", &useDebugFov)) {
+        camera->setUseDebugCullingFov(useDebugFov);
+    }
+
+    if (useDebugFov) {
+        float debugFov = camera->getDebugCullingFov();
+        if (ImGui::SliderFloat("Culling FOV", &debugFov, 10.0f, 120.0f)) {
+            camera->setDebugCullingFov(debugFov);
+        }
+    }
+
     ImGui::End();
 
     ImGui::PopStyleColor(8);

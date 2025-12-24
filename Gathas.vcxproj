@@ -152,6 +152,7 @@
     <ClCompile Include="src\core\directionallight.cpp" />
     <ClCompile Include="src\core\pointlight.cpp" />
     <ClCompile Include="src\core\scene.cpp" />
+    <ClCompile Include="src\renderer\frustum.cpp" />
     <ClCompile Include="src\renderer\gbuffer.cpp" />
     <ClCompile Include="src\renderer\indirectdrawing.cpp" />
     <ClCompile Include="src\renderer\materialmanager.cpp" />
@@ -192,6 +193,7 @@
     <ClInclude Include="src\core\directionallight.hpp" />
     <ClInclude Include="src\core\pointlight.hpp" />
     <ClInclude Include="src\core\scene.hpp" />
+    <ClInclude Include="src\renderer\frustum.hpp" />
     <ClInclude Include="src\renderer\gbuffer.hpp" />
     <ClInclude Include="src\renderer\indirectdrawing.hpp" />
     <ClInclude Include="src\renderer\material.hpp" />

@@ -6,6 +6,7 @@
 #include "../renderer/commandbuffer.hpp"
 #include "../renderer/indirectdrawing.hpp"
 #include "../renderer/gpubuffer.hpp"
+#include "../renderer/frustum.hpp"
 #include "../ui/primitives/aabb.hpp"
 #include "vk_mem_alloc.h"
 #include <vector>
@@ -20,6 +21,7 @@ public:
         std::string name;
         std::string folderPath;
         std::vector<AABB> submeshAABBs;
+        glm::mat4 transform = glm::mat4(1.0f);
     };
 
     Scene(VmaAllocator allocator, CommandBuffer* commandBuffer,
@@ -66,9 +68,12 @@ public:
     std::vector<std::pair<const MaterialManager::Material*, const MaterialBatch*>>
         getSortedTransparentBatches(const glm::mat4& viewProj) const;
 
-    // bind unified vertex/index buffers to command buffer
     void bindUnifiedBuffers(VkCommandBuffer commandBuffer) const;
     bool hasUnifiedBuffers() const { return unifiedVertexBuffer.getBuffer() != VK_NULL_HANDLE; }
+
+    void updateCulling(const glm::mat4& viewProj, uint32_t frameIndex);
+    void recordIndirectBufferCopies(VkCommandBuffer cmd, uint32_t frameIndex);
+    uint32_t getVisibleCount(uint32_t frameIndex) const { return lastVisibleCount[frameIndex]; }
 
 private:
     VmaAllocator allocator;
@@ -82,6 +87,9 @@ private:
 
     GPUBuffer unifiedVertexBuffer;
     GPUBuffer unifiedIndexBuffer;
+
+    Frustum frustum;
+    uint32_t lastVisibleCount[MAX_FRAMES_IN_FLIGHT] = {0, 0};
 
     void buildMaterialBatches();
     void buildUnifiedBuffers();

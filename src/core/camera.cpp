@@ -154,6 +154,20 @@ glm::mat4 Camera::getViewProjectionMatrix() const {
     return getProjectionMatrix() * getViewMatrix();
 }
 
+glm::mat4 Camera::getCullingViewProjectionMatrix() const {
+    if (!useDebugCullingFov) {
+        return getViewProjectionMatrix();
+    }
+
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    if (height == 0) height = 1;
+    float aspect = static_cast<float>(width) / static_cast<float>(height);
+
+    glm::mat4 cullingProj = glm::perspective(glm::radians(debugCullingFov), aspect, 0.1f, 10000.0f);
+    return cullingProj * getViewMatrix();
+}
+
 void Camera::setupInputCallbacks(GLFWwindow* win) {
     window = win;
     glfwSetMouseButtonCallback(window, mouseButtonCallback);

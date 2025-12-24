@@ -1,6 +1,7 @@
 #include "aabb.hpp"
 #include "../../renderer/vertex.hpp"
 #include <limits>
+#include <glm/glm.hpp>
 
 AABB AABB::computeFromSubmesh(
     const std::vector<Vertex>& vertices,
@@ -41,4 +42,28 @@ AABB AABB::computeFromVertices(const std::vector<Vertex>& vertices)
     }
 
     return AABB(minBounds, maxBounds);
+}
+
+AABB AABB::transform(const glm::mat4& modelMatrix) const {
+    glm::vec3 corners[8] = {
+        {min.x, min.y, min.z},
+        {max.x, min.y, min.z},
+        {min.x, max.y, min.z},
+        {max.x, max.y, min.z},
+        {min.x, min.y, max.z},
+        {max.x, min.y, max.z},
+        {min.x, max.y, max.z},
+        {max.x, max.y, max.z},
+    };
+
+    glm::vec3 newMin(std::numeric_limits<float>::max());
+    glm::vec3 newMax(std::numeric_limits<float>::lowest());
+
+    for (int i = 0; i < 8; ++i) {
+        glm::vec3 worldCorner = glm::vec3(modelMatrix * glm::vec4(corners[i], 1.0f));
+        newMin = glm::min(newMin, worldCorner);
+        newMax = glm::max(newMax, worldCorner);
+    }
+
+    return AABB(newMin, newMax);
 }

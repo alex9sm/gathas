@@ -105,7 +105,7 @@ void MaterialManager::loadMaterialsFromFile(const std::string& mtlFilePath, cons
                   << " (Total: " << materials.size() << ")" << std::endl;
     }
     else {
-        std::cout << "No new materials loaded from " << mtlFilePath << " (all already exist)" << std::endl;
+        std::cout << "No new materials loaded from " << mtlFilePath << std::endl;
     }
 }
 
@@ -122,7 +122,7 @@ void MaterialManager::parseMtlFile(const std::string& mtlFilePath, const std::st
         if (hasMaterial) {
             // check if material already exists
             if (materialNameToIndex.find(currentMaterial.name) != materialNameToIndex.end()) {
-                std::cout << "Material '" << currentMaterial.name << "' already exists, skipping" << std::endl;
+                
                 hasMaterial = false;
                 return;
             }

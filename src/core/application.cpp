@@ -327,8 +327,11 @@ void Application::drawFrame() {
     debugDraw->upload();
 
     glm::mat4 viewProj = camera->getViewProjectionMatrix();
+    glm::mat4 cullingViewProj = camera->getCullingViewProjectionMatrix();
 
-    commandBuffer->recordFrame(cmdBuffer, imageIndex, swapChain->getExtent(),
+    scene->updateCulling(cullingViewProj, currentFrame);
+
+    commandBuffer->recordFrame(cmdBuffer, imageIndex, currentFrame, swapChain->getExtent(),
         pipeline->getGeometryRenderPass(),
         pipeline->getGeometryFramebuffers(),
         pipeline->getGeometryPipeline(), pipeline->getPipelineLayout(),

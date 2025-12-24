@@ -197,8 +197,12 @@ void Scene::buildMaterialBatches() {
 
     buildUnifiedBuffers();
 
+    uint32_t modelIndex = 0;
     for (const auto& model : models) {
-        if (!model.mesh) continue;
+        if (!model.mesh) {
+            modelIndex++;
+            continue;
+        }
 
         const MeshOffsets& offsets = meshOffsets[model.mesh.get()];
 
@@ -206,7 +210,6 @@ void Scene::buildMaterialBatches() {
             const std::string& materialName = model.mesh->getMaterialName(i);
             const MaterialManager::Material* material = materialManager->getMaterialByName(materialName);
 
-            // separate into opaque or transparent batches based on material alpha
             bool isTransparent = material && material->hasAlpha;
             auto& targetBatches = isTransparent ? transparentBatches : opaqueBatches;
 
@@ -218,17 +221,18 @@ void Scene::buildMaterialBatches() {
                 it = insertIt;
             }
 
-            it->second.addDrawWithOffsets(model.mesh.get(), i, glm::mat4(1.0f),
-                offsets.globalVertexOffset, offsets.globalIndexOffset);
+            it->second.addDrawWithOffsets(model.mesh.get(), i, model.transform,
+                offsets.globalVertexOffset, offsets.globalIndexOffset, modelIndex);
         }
+        modelIndex++;
     }
 
     for (auto& [material, batch] : opaqueBatches) {
-        batch.buildIndirectBuffer(allocator);
+        batch.allocateBuffers(allocator);
     }
 
     for (auto& [material, batch] : transparentBatches) {
-        batch.buildIndirectBuffer(allocator);
+        batch.allocateBuffers(allocator);
     }
 
     std::cout << "Built " << opaqueBatches.size() << " opaque batches and "
@@ -333,4 +337,80 @@ Scene::getSortedTransparentBatches(const glm::mat4& viewProj) const {
         });
 
     return sortedBatches;
+}
+
+/*
+    Per-frame frustum culling: extracts frustum from viewProj, tests each submesh AABB
+    against it, and updates material batch visible commands with only the visible draws.
+*/
+void Scene::updateCulling(const glm::mat4& viewProj, uint32_t frameIndex) {
+    frustum.extractFromViewProj(viewProj);
+
+    std::unordered_map<const MaterialManager::Material*, std::vector<VkDrawIndexedIndirectCommand>> opaqueVisible;
+    std::unordered_map<const MaterialManager::Material*, std::vector<VkDrawIndexedIndirectCommand>> transparentVisible;
+
+    uint32_t totalVisible = 0;
+    uint32_t totalTested = 0;
+
+    for (auto& [material, batch] : opaqueBatches) {
+        auto& visibleCmds = opaqueVisible[material];
+        visibleCmds.reserve(batch.drawCommands.size());
+
+        for (const auto& cmd : batch.drawCommands) {
+            totalTested++;
+
+            if (cmd.modelIndex >= models.size()) continue;
+            const Model& model = models[cmd.modelIndex];
+            if (cmd.submeshIndex >= model.submeshAABBs.size()) continue;
+
+            const AABB& localAABB = model.submeshAABBs[cmd.submeshIndex];
+            bool visible = frustum.testAABB(localAABB, model.transform);
+
+            if (visible) {
+                visibleCmds.push_back(cmd.indirectCommand);
+                totalVisible++;
+            }
+        }
+    }
+
+    for (auto& [material, batch] : transparentBatches) {
+        auto& visibleCmds = transparentVisible[material];
+        visibleCmds.reserve(batch.drawCommands.size());
+
+        for (const auto& cmd : batch.drawCommands) {
+            totalTested++;
+
+            if (cmd.modelIndex >= models.size()) continue;
+            const Model& model = models[cmd.modelIndex];
+            if (cmd.submeshIndex >= model.submeshAABBs.size()) continue;
+
+            const AABB& localAABB = model.submeshAABBs[cmd.submeshIndex];
+            bool visible = frustum.testAABB(localAABB, model.transform);
+
+            if (visible) {
+                visibleCmds.push_back(cmd.indirectCommand);
+                totalVisible++;
+            }
+        }
+    }
+
+    for (auto& [material, batch] : opaqueBatches) {
+        batch.updateVisibleCommands(frameIndex, opaqueVisible[material]);
+    }
+
+    for (auto& [material, batch] : transparentBatches) {
+        batch.updateVisibleCommands(frameIndex, transparentVisible[material]);
+    }
+
+    lastVisibleCount[frameIndex] = totalVisible;
+}
+
+void Scene::recordIndirectBufferCopies(VkCommandBuffer cmd, uint32_t frameIndex) {
+    for (auto& [material, batch] : opaqueBatches) {
+        batch.recordBufferCopy(cmd, frameIndex);
+    }
+
+    for (auto& [material, batch] : transparentBatches) {
+        batch.recordBufferCopy(cmd, frameIndex);
+    }
 }

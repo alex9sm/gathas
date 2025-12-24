@@ -36,6 +36,12 @@ public:
 
     float* getSpeedPtr() { return &movementSpeed; }
     glm::mat4 getViewProjectionMatrix() const;
+    glm::mat4 getCullingViewProjectionMatrix() const;
+
+    void setDebugCullingFov(float fov) { debugCullingFov = fov; }
+    float getDebugCullingFov() const { return debugCullingFov; }
+    void setUseDebugCullingFov(bool use) { useDebugCullingFov = use; }
+    bool getUseDebugCullingFov() const { return useDebugCullingFov; }
 
     static const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -59,6 +65,9 @@ private:
 
     float movementSpeed;
     float mouseSensitivity;
+
+    float debugCullingFov = 45.0f;
+    bool useDebugCullingFov = false;
 
     bool firstMouse;
     double lastX;

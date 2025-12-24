@@ -16,7 +16,8 @@ struct AABB {
     glm::vec3 getCenter() const { return (min + max) * 0.5f; }
     glm::vec3 getExtents() const { return (max - min) * 0.5f; }
 
-    // compute AABB from a subset of vertices using index buffer
+    AABB transform(const glm::mat4& modelMatrix) const;
+
     static AABB computeFromSubmesh(
         const std::vector<Vertex>& vertices,
         const std::vector<uint32_t>& indices,

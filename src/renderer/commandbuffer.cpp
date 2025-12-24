@@ -78,7 +78,7 @@ void CommandBuffer::createSyncObjects() {
 }
 
 void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-    VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+    uint32_t frameIndex, VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
     VkDescriptorSet descriptorSet, MaterialManager* materialManager, Scene* scene) {
 
@@ -147,13 +147,13 @@ void CommandBuffer::recordGeometryPass(VkCommandBuffer commandBuffer, uint32_t i
                     0, sizeof(MaterialPushConstants), &pushConstants);
             }
 
-            // issue single indirect draw for all commands in this batch
-            if (!batch.drawCommands.empty()) {
+            uint32_t visibleCount = batch.getVisibleCount(frameIndex);
+            if (visibleCount > 0) {
                 vkCmdDrawIndexedIndirect(
                     commandBuffer,
-                    batch.indirectBuffer.getBuffer(),
+                    batch.getIndirectBuffer(frameIndex),
                     0,
-                    static_cast<uint32_t>(batch.drawCommands.size()),
+                    visibleCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
             }
@@ -214,7 +214,7 @@ void CommandBuffer::recordLightingPass(VkCommandBuffer commandBuffer, uint32_t i
 }
 
 void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-    VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
+    uint32_t frameIndex, VkRenderPass renderPass, const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent, VkPipeline pipeline, VkPipelineLayout pipelineLayout,
     VkDescriptorSet cameraDescriptorSet, VkDescriptorSet lightDescriptorSet,
     VkDescriptorSet pointLightDescriptorSet, Scene* scene, const glm::mat4& viewProj) {
@@ -289,13 +289,13 @@ void CommandBuffer::recordForwardPass(VkCommandBuffer commandBuffer, uint32_t im
                 vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
                     0, sizeof(MaterialPushConstants), &pushConstants);
 
-                // indirect draw for all commands in this batch
-                if (!batch->drawCommands.empty()) {
+                uint32_t visibleCount = batch->getVisibleCount(frameIndex);
+                if (visibleCount > 0) {
                     vkCmdDrawIndexedIndirect(
                         commandBuffer,
-                        batch->indirectBuffer.getBuffer(),
+                        batch->getIndirectBuffer(frameIndex),
                         0,
-                        static_cast<uint32_t>(batch->drawCommands.size()),
+                        visibleCount,
                         sizeof(VkDrawIndexedIndirectCommand)
                     );
                 }
@@ -373,7 +373,8 @@ void CommandBuffer::recordImGuiPass(VkCommandBuffer commandBuffer, uint32_t imag
     vkCmdEndRenderPass(commandBuffer);
 }
 
-void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkExtent2D extent,
+void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+    uint32_t frameIndex, VkExtent2D extent,
     VkRenderPass geometryRenderPass, const std::vector<VkFramebuffer>& geometryFramebuffers,
     VkPipeline geometryPipeline, VkPipelineLayout geometryPipelineLayout,
     VkDescriptorSet cameraDescriptorSet, MaterialManager* materialManager, Scene* scene,
@@ -399,7 +400,11 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
-    recordGeometryPass(commandBuffer, imageIndex, geometryRenderPass, geometryFramebuffers,
+    if (scene) {
+        scene->recordIndirectBufferCopies(commandBuffer, frameIndex);
+    }
+
+    recordGeometryPass(commandBuffer, imageIndex, frameIndex, geometryRenderPass, geometryFramebuffers,
         extent, geometryPipeline, geometryPipelineLayout, cameraDescriptorSet,
         materialManager, scene);
 
@@ -407,7 +412,7 @@ void CommandBuffer::recordFrame(VkCommandBuffer commandBuffer, uint32_t imageInd
         extent, lightingPipeline, lightingPipelineLayout, cameraDescriptorSet,
         gbufferDescriptorSet, lightDescriptorSet, pointLightDescriptorSet);
 
-    recordForwardPass(commandBuffer, imageIndex, forwardRenderPass, forwardFramebuffers,
+    recordForwardPass(commandBuffer, imageIndex, frameIndex, forwardRenderPass, forwardFramebuffers,
         extent, forwardPipeline, forwardPipelineLayout, cameraDescriptorSet,
         lightDescriptorSet, pointLightDescriptorSet, scene, viewProj);
 
